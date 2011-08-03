@@ -583,7 +583,8 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
 	}
 	printk("} (detected by %d, t=%ld jiffies)\n",
 	       smp_processor_id(), (long)(jiffies - rsp->gp_start));
-	trigger_all_cpu_backtrace();
+	if (!trigger_all_cpu_backtrace())
+		dump_stack();
 
 	/* If so configured, complain about tasks blocking the grace period. */
 
@@ -602,13 +603,10 @@ static void print_cpu_stall(struct rcu_state *rsp)
 	 * See Documentation/RCU/stallwarn.txt for info on how to debug
 	 * RCU CPU stall warnings.
 	 */
-	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies %lu ms)\n",
-	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start, jiffies_to_msecs(jiffies - rsp->gp_start) );
-
-/*                                                                                                                   */
-	panic("need to reset because of detecting stall on CPU\n");
-	//trigger_all_cpu_backtrace();
-/*                                                                                                                   */
+	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies)\n",
+	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start);
+	if (!trigger_all_cpu_backtrace())
+		dump_stack();
 
 	raw_spin_lock_irqsave(&rnp->lock, flags);
 	if (ULONG_CMP_GE(jiffies, rsp->jiffies_stall))
