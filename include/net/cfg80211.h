@@ -3520,6 +3520,14 @@ int cfg80211_can_beacon_sec_chan(struct wiphy *wiphy,
 u16 cfg80211_calculate_bitrate(struct rate_info *rate);
 #endif
 
+/*
+ * cfg80211_calculate_bitrate - calculate actual bitrate (in 100Kbps units)
+ * @rate: given rate_info to calculate bitrate from
+ *
+ * return 0 if MCS index >= 32
+ */
+u16 cfg80211_calculate_bitrate(struct rate_info *rate);
+
 /* Logging, debugging and troubleshooting/diagnostic helpers. */
 
 /* wiphy_printk helpers, similar to dev_printk */
