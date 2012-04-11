@@ -133,7 +133,6 @@ static inline int __tps6591x_read(struct i2c_client *client,
 	}
 
 	*val = (uint8_t)ret;
-
 	return 0;
 }
 
@@ -183,6 +182,7 @@ int tps6591x_write(struct device *dev, int reg, uint8_t val)
 {
 	struct tps6591x *tps6591x = dev_get_drvdata(dev);
 	int ret = 0;
+
 
 	mutex_lock(&tps6591x->lock);
 	ret = __tps6591x_write(to_i2c_client(dev), reg, val);
