@@ -20,6 +20,10 @@
 
 #include <linux/reboot.h>
 
+#if defined(CONFIG_MFD_MAX77663)
+#include <linux/mfd/max77663-core.h>
+#endif
+
 #define _COLD_BOOT       0
 #define _NORMAL_WARMBOOT  1
 #define _HIDDEN_RESET    2
