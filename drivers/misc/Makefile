@@ -79,4 +79,4 @@ obj-y				+= cpwatcher.o
 #LGE_IMC_RIL
 obj-y   += mtc_eta/
 obj-$(CONFIG_TEGRA_THROUGHPUT)	+= tegra-throughput.o
-
+obj-$(CONFIG_UID_CPUTIME)	+= uid_cputime.o
