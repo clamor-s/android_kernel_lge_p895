@@ -41,6 +41,7 @@
 #include <linux/lockd/bind.h>
 #include <linux/seq_file.h>
 #include <linux/mount.h>
+#include <linux/mnt_namespace.h>
 #include <linux/namei.h>
 #include <linux/nfs_idmap.h>
 #include <linux/vfs.h>
