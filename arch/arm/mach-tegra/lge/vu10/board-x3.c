@@ -162,8 +162,6 @@ static struct tegra_thermal_data thermal_data = {
 #endif
 };
 
-
-
 static __initdata struct tegra_clk_init_table x3_clk_init_table[] = {
 	/* name		parent		rate		enabled */
 	{ "pll_m",	NULL,		0,		false},
@@ -198,12 +196,6 @@ static __initdata struct tegra_clk_init_table x3_clk_init_table[] = {
 static __initdata struct tegra_clk_init_table x3_clk_i2s2_table[] = {
 	/* name		parent		rate		enabled */
 	{ "i2s2",	"pll_a_out0",	0,		false},
-	{ NULL,		NULL,		0,		0},
-};
-
-static __initdata struct tegra_clk_init_table x3_clk_i2s4_table[] = {
-	/* name		parent		rate		enabled */
-	{ "i2s4",	"pll_a_out0",	0,		false},
 	{ NULL,		NULL,		0,		0},
 };
 
@@ -328,20 +320,6 @@ static struct platform_device tegra_camera = {
 	.id = -1,
 };
 
-static struct resource ram_console_resources[] = {
-	{
-		.flags = IORESOURCE_MEM,
-	},
-};
-
-/*
-static struct platform_device ram_console_device = {
-	.name 		= "ram_console",
-	.id 		= -1,
-	.num_resources	= ARRAY_SIZE(ram_console_resources),
-	.resource	= ram_console_resources,
-};
-*/
 //                                              
 #if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_MHI_NETDEV)
 struct platform_device mhi_netdevice0 = {
