@@ -388,12 +388,6 @@ static void x3_power_off(void)
 
 	pr_err("Powering off the device\n");
 
-#if defined(CONFIG_MFD_TPS80031)
-	/*
-	 * power-code should be completed in tps80031
-	 */
-	ret = tps80031_power_off();
-#endif /* defined(CONFIG_MFD_TPS80031) */
 #if defined(CONFIG_MFD_MAX77663)
 	/*
 	 * power-code should be completed in tps80031
@@ -457,14 +451,10 @@ static struct tegra_suspend_platform_data x3_suspend_data = {
 
 static void x3_init_deep_sleep_mode(void)
 {
-#if defined(CONFIG_MACH_X3)
-	x3_suspend_data.suspend_mode = TEGRA_SUSPEND_LP0;
-#else
 	struct board_info bi;
 	tegra_get_board_info(&bi);
 	if (bi.board_id == BOARD_1205 && bi.fab == X3_FAB_A01)
 		x3_suspend_data.suspend_mode = TEGRA_SUSPEND_LP1;
-#endif
 }
 
 int __init x3_suspend_init(void)
@@ -513,14 +503,7 @@ void __init x3_bpc_mgmt_init(void)
 	int tegra_bpc_gpio;
 	int int_gpio;
 
-	if (x3_get_hw_rev_pcb_version() == hw_rev_pcb_type_A) {
-		tegra_bpc_gpio = TEGRA_GPIO_PJ6;
-	}
-	else {
-		tegra_bpc_gpio = TEGRA_GPIO_PX6;
-	}
-
-
+	tegra_bpc_gpio = TEGRA_GPIO_PX6;
 	bpc_mgmt_platform_data.gpio_trigger = tegra_bpc_gpio;
 
 	int_gpio = TEGRA_GPIO_TO_IRQ(tegra_bpc_gpio);
@@ -545,17 +528,7 @@ static irqreturn_t max77663_irq_manualreset_warning(int irq, void *data)
 {
 	printk("%s\n", __func__);
 
-#if defined(CONFIG_MACH_VU10)
-//	show_state_filter(TASK_UNINTERRUPTIBLE);
-//	show_state();  // append debug message
-//	BUG();
 	kmsg_dump(KMSG_DUMP_PANIC);
-#else
-//	show_state_filter(TASK_UNINTERRUPTIBLE);
-//	show_state();  // append debug message
-//	BUG();
-	kmsg_dump(KMSG_DUMP_PANIC);
-#endif
 
 	return IRQ_HANDLED;
 }
