@@ -1742,17 +1742,6 @@ out_unlock_mutex:
 				"%s irq assigned error: %d\n",
 				slave_descr->name, warn_result);
 	}
-#ifndef CONFIG_MACH_X3
-	/*                                        
-                                                    
-  */
-	else {
-		dev_WARN(&slave_client->adapter->dev,
-			"%s irq not assigned: %d %d %d\n",
-			slave_descr->name,
-			result, (int)irq_name, slave_pdata->irq);
-	}
-#endif
 
 	return result;
 }
