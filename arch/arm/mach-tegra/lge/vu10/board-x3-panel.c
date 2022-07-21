@@ -46,7 +46,7 @@
 #include <../../../../../../drivers/video/tegra/ssd2825/ssd2825_bridge.h>
 
 #if defined(CONFIG_MACH_VU10)
-#include <mach-tegra/wakeups-t3.h>	//                                                                  
+#include <mach-tegra/wakeups-t3.h>
 #endif
 
 #if defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
@@ -63,143 +63,18 @@ static struct regulator *x3_hdmi_reg = NULL;
 static struct regulator *x3_hdmi_pll = NULL;
 static struct regulator *x3_hdmi_vddio = NULL;
 
-//static struct regulator *x3_lgit_hdmi_pll = NULL;
-
-static atomic_t sd_brightness = ATOMIC_INIT(255);
-
 #if defined(CONFIG_MACH_VU10)
-unsigned long long wake_status_backup=0; //                                                                  
+unsigned long long wake_status_backup = 0;
 #endif
-
-static tegra_dc_bl_output x3_bl_output_measured = {
-	1, 5, 9, 10, 11, 12, 12, 13,
-	13, 14, 14, 15, 15, 16, 16, 17,
-	17, 18, 18, 19, 19, 20, 21, 21,
-	22, 22, 23, 24, 24, 25, 26, 26,
-	27, 27, 28, 29, 29, 31, 31, 32,
-	32, 33, 34, 35, 36, 36, 37, 38,
-	39, 39, 40, 41, 41, 42, 43, 43,
-	44, 45, 45, 46, 47, 47, 48, 49,
-	49, 50, 51, 51, 52, 53, 53, 54,
-	55, 56, 56, 57, 58, 59, 60, 61,
-	61, 62, 63, 64, 65, 65, 66, 67,
-	67, 68, 69, 69, 70, 71, 71, 72,
-	73, 73, 74, 74, 75, 76, 76, 77,
-	77, 78, 79, 79, 80, 81, 82, 83,
-	83, 84, 85, 85, 86, 86, 88, 89,
-	90, 91, 91, 92, 93, 93, 94, 95,
-	95, 96, 97, 97, 98, 99, 99, 100,
-	101, 101, 102, 103, 103, 104, 105, 105,
-	107, 107, 108, 109, 110, 111, 111, 112,
-	113, 113, 114, 115, 115, 116, 117, 117,
-	118, 119, 119, 120, 121, 122, 123, 124,
-	124, 125, 126, 126, 127, 128, 129, 129,
-	130, 131, 131, 132, 133, 133, 134, 135,
-	135, 136, 137, 137, 138, 139, 139, 140,
-	142, 142, 143, 144, 145, 146, 147, 147,
-	148, 149, 149, 150, 151, 152, 153, 153,
-	153, 154, 155, 156, 157, 158, 158, 159,
-	160, 161, 162, 163, 163, 164, 165, 165,
-	166, 166, 167, 168, 169, 169, 170, 170,
-	171, 172, 173, 173, 174, 175, 175, 176,
-	176, 178, 178, 179, 180, 181, 182, 182,
-	183, 184, 185, 186, 186, 187, 188, 188
-};
-
-static p_tegra_dc_bl_output bl_output;
-
-static int x3_backlight_notify(struct device *unused, int brightness)
-{
-	int cur_sd_brightness = atomic_read(&sd_brightness);
-	int orig_brightness = brightness;
-
-	/* SD brightness is a percentage, 8-bit value. */
-	brightness = (brightness * cur_sd_brightness) / 255;
-	if (cur_sd_brightness != 255) {
-		pr_info("NVSD BL - in: %d, sd: %d, out: %d\n",
-			orig_brightness, cur_sd_brightness, brightness);
-	}
-
-	/* Apply any backlight response curve */
-	if (brightness > 255)
-		pr_info("Error: Brightness > 255!\n");
-	else
-		brightness = bl_output[brightness];
-
-	return brightness;
-}
-
-static int x3_disp1_check_fb(struct device *dev, struct fb_info *info);
-
-#if IS_EXTERNAL_PWM
-static struct platform_pwm_backlight_data x3_disp1_backlight_data = {
-	.pwm_id		= 3,
-	.max_brightness	= 255,
-	.dft_brightness	= 224,
-	.pwm_period_ns	= 1000000,
-	.notify		= x3_backlight_notify,
-	/* Only toggle backlight on fb blank notifications for disp1 */
-	.check_fb	= x3_disp1_check_fb,
-};
-#else
-static struct platform_tegra_pwm_backlight_data x3_disp1_backlight_data = {
-	.which_dc	= 0,
-	.which_pwm	= TEGRA_PWM_PM1,
-	.gpio_conf_to_sfio	= TEGRA_GPIO_PW1,
-	.max_brightness	= 255,
-	.dft_brightness	= 224,
-	.notify 	= x3_backlight_notify,
-	.period 		= 0xFF,
-	.clk_div		= 0x3FF,
-	.clk_select 	= 0,
-	/* Only toggle backlight on fb blank notifications for disp1 */
-	.check_fb	= x3_disp1_check_fb,
-};
-#endif
-
-static struct platform_device x3_disp1_backlight_device = {
-#if IS_EXTERNAL_PWM
-	.name	= "pwm-backlight",
-#else
-	.name	= "tegra-pwm-bl",
-#endif
-	.id	= -1,
-	.dev	= {
-		.platform_data = &x3_disp1_backlight_data,
-	},
-};
-
-static int x3_backlight_init(struct device *dev) {
-	return 0;
-}
-
-static void x3_backlight_exit(struct device *dev) {
-}
-
-
-static struct platform_pwm_backlight_data x3_backlight_data = {
-	.pwm_id		= 2,	//                    
-	.max_brightness	= 255,
-	.max_current	= 0xB7,
-	.dft_brightness	= 224,
-	.pwm_period_ns	= 5000000,
-	.init		= x3_backlight_init,
-	.exit		= x3_backlight_exit,
-	.notify		= x3_backlight_notify,
-};
-
-static struct platform_device x3_backlight_device = {
-	.name	= "pwm-backlight",
-	.id	= -1,
-	.dev	= {
-		.platform_data = &x3_backlight_data,
-	},
-};
 
 static bool first_disp_boot = TRUE;
 static int x3_panel_enable(void)
 {
 	printk("%s -- x3_hddisplay_on:%d \n",__func__,x3_hddisplay_on);
+	printk("[VU] DEVICE REVISION %d\n", x3_get_hw_rev_pcb_version());
+
+	mdelay(1000);
+
 	if(!x3_hddisplay_on){
 #if defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
 		//printk("system_state:%d, first_disp_boot:%d \n",system_state,first_disp_boot);
@@ -440,100 +315,6 @@ static struct tegra_dc_out_pin ssd2825_dc_out_pins[] = {
 	},
 };
 
-#if 0
-static struct tegra_dc_sd_settings x3_sd_settings = {
-	.enable = 1, /* Normal mode operation */
-	.use_auto_pwm = true,
-	.hw_update_delay = 0,
-	.bin_width = -1,
-	.aggressiveness = 1,
-	.phase_in_adjustments = true,
-	.use_vid_luma = false,
-	/* Default video coefficients */
-	.coeff = {5, 9, 2},
-	.fc = {0, 0},
-	/* Immediate backlight changes */
-	.blp = {1024, 255},
-	/* Gammas: R: 2.2 G: 2.2 B: 2.2 */
-	/* Default BL TF */
-	.bltf = {
-			{
-				{57, 65, 74, 83},
-				{93, 103, 114, 126},
-				{138, 151, 165, 179},
-				{194, 209, 225, 242},
-			},
-			{
-				{58, 66, 75, 84},
-				{94, 105, 116, 127},
-				{140, 153, 166, 181},
-				{196, 211, 227, 244},
-			},
-			{
-				{60, 68, 77, 87},
-				{97, 107, 119, 130},
-				{143, 156, 170, 184},
-				{199, 215, 231, 248},
-			},
-			{
-				{64, 73, 82, 91},
-				{102, 113, 124, 137},
-				{149, 163, 177, 192},
-				{207, 223, 240, 255},
-			},
-		},
-	/* Default LUT */
-	.lut = {
-			{
-				{250, 250, 250},
-				{194, 194, 194},
-				{149, 149, 149},
-				{113, 113, 113},
-				{82, 82, 82},
-				{56, 56, 56},
-				{34, 34, 34},
-				{15, 15, 15},
-				{0, 0, 0},
-			},
-			{
-				{246, 246, 246},
-				{191, 191, 191},
-				{147, 147, 147},
-				{111, 111, 111},
-				{80, 80, 80},
-				{55, 55, 55},
-				{33, 33, 33},
-				{14, 14, 14},
-				{0, 0, 0},
-			},
-			{
-				{239, 239, 239},
-				{185, 185, 185},
-				{142, 142, 142},
-				{107, 107, 107},
-				{77, 77, 77},
-				{52, 52, 52},
-				{30, 30, 30},
-				{12, 12, 12},
-				{0, 0, 0},
-			},
-			{
-				{224, 224, 224},
-				{173, 173, 173},
-				{133, 133, 133},
-				{99, 99, 99},
-				{70, 70, 70},
-				{46, 46, 46},
-				{25, 25, 25},
-				{7, 7, 7},
-				{0, 0, 0},
-			},
-		},
-	.sd_brightness = &sd_brightness,
-	.bl_device = &x3_backlight_device,
-};
-#endif
-
 static struct tegra_fb_data x3_fb_data = {
     .win        = 0,
 //                                                                    
@@ -711,10 +492,6 @@ static struct platform_device *x3_gfx_devices[] __initdata = {
 #endif
 };
 
-static struct platform_device *x3_bl_devices[]  = {
-	&x3_disp1_backlight_device,
-};
-
 #ifdef CONFIG_HAS_EARLYSUSPEND
 /* put early_suspend/late_resume handlers here for the display in order
  * to keep the code out of the display driver, keeping it closer to upstream
@@ -828,11 +605,6 @@ int __init x3_panel_init(void)
 {
 	int err;
 	struct resource *res;
-
-	bl_output = x3_bl_output_measured;
-
-	if (WARN_ON(ARRAY_SIZE(x3_bl_output_measured) != 256))
-		pr_err("bl_output array does not have 256 elements\n");
 
 #if !defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
 	gpio_init_set();
