@@ -140,22 +140,18 @@ static __initdata struct tegra_drive_pingroup_config vu10_drive_pinmux[] = {
 };
 
 static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
-#if 1
 	DEFAULT_PINMUX(SPI1_CS0_N,      GMI,           NORMAL,     NORMAL,      INPUT),
-	DEFAULT_PINMUX(SDMMC3_DAT1,		RSVD0,         NORMAL,     NORMAL,      INPUT), //MICROSD_DAT1
-	DEFAULT_PINMUX(SDMMC3_CLK,      RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_CLK
-	DEFAULT_PINMUX(SDMMC3_CMD,      RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_CMD
-	DEFAULT_PINMUX(SDMMC3_DAT0,     RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT0
-//	DEFAULT_PINMUX(SDMMC3_DAT1,     SDMMC3,        PULL_UP,   NORMAL,       INPUT),	//MICROSD_DAT1
-	DEFAULT_PINMUX(SDMMC3_DAT2,     RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT2
-	DEFAULT_PINMUX(SDMMC3_DAT3,     RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
-	DEFAULT_PINMUX(SDMMC3_DAT4,     RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
-	DEFAULT_PINMUX(SDMMC3_DAT5,     RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
-	DEFAULT_PINMUX(SDMMC3_DAT6,     RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
-	DEFAULT_PINMUX(SDMMC3_DAT7,     RSVD,          NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
-#else
-	DEFAULT_PINMUX(SDMMC3_DAT1,		RSVD0,         PULL_UP,     NORMAL,      INPUT), //MICROSD_DAT1
-#endif
+
+	DEFAULT_PINMUX(SDMMC3_CLK,      SDMMC3,        NORMAL,    TRISTATE,     INPUT),	//MICROSD_CLK
+	DEFAULT_PINMUX(SDMMC3_CMD,      SDMMC3,        NORMAL,    TRISTATE,     INPUT),	//MICROSD_CMD
+	DEFAULT_PINMUX(SDMMC3_DAT0,     RSVD1,         NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT0
+	DEFAULT_PINMUX(SDMMC3_DAT1,		RSVD1,         NORMAL,      NORMAL,     INPUT), //MICROSD_DAT1
+	DEFAULT_PINMUX(SDMMC3_DAT2,     RSVD1,         NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT2
+	DEFAULT_PINMUX(SDMMC3_DAT3,     RSVD1,         NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
+	DEFAULT_PINMUX(SDMMC3_DAT4,     SDMMC3,        NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
+	DEFAULT_PINMUX(SDMMC3_DAT5,     SDMMC3,        NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
+	DEFAULT_PINMUX(SDMMC3_DAT6,     SDMMC3,        NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
+	DEFAULT_PINMUX(SDMMC3_DAT7,     RSVD2,         NORMAL,    TRISTATE,     INPUT),	//MICROSD_DAT3
 
 	/* SDMMC4 pinmux */
 	DEFAULT_PINMUX(SDMMC4_CLK,      SDMMC4,          NORMAL,    NORMAL,     INPUT),		//eMMC_CLK
@@ -191,11 +187,11 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	I2C_PINMUX(PWR_I2C_SDA,         I2CPWR,          NORMAL,    NORMAL,     INPUT,	DEFAULT,	DEFAULT),
 
 	DEFAULT_PINMUX(ULPI_DATA0,      SPI3,            PULL_UP,   TRISTATE,   OUTPUT), //TOUCH_RESET_N
-	DEFAULT_PINMUX(ULPI_DATA1,      RSVD,            PULL_UP,   NORMAL,     OUTPUT), //LCD_BRIDGE_RESET_N
+	DEFAULT_PINMUX(ULPI_DATA1,      SPI3,            PULL_UP,   NORMAL,     OUTPUT), //LCD_BRIDGE_RESET_N
 	DEFAULT_PINMUX(ULPI_DATA2,      SPI3,            PULL_UP,   TRISTATE,   INPUT),
 	DEFAULT_PINMUX(ULPI_DATA3,      SPI3,            PULL_UP,   NORMAL,   INPUT),
 	DEFAULT_PINMUX(ULPI_DATA4,      ULPI,            PULL_UP,   NORMAL,   INPUT),
-	DEFAULT_PINMUX(ULPI_DATA6,      SPI3,            PULL_UP,   NORMAL,   INPUT),
+	DEFAULT_PINMUX(ULPI_DATA6,      SPI2,            PULL_UP,   NORMAL,   INPUT),
 	DEFAULT_PINMUX(SPI2_MOSI,       SPI2,            PULL_DOWN,  NORMAL,   OUTPUT),
 
 	DEFAULT_PINMUX(ULPI_CLK,        RSVD,            PULL_DOWN, NORMAL,	OUTPUT), //LCD_EN
@@ -225,7 +221,7 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	DEFAULT_PINMUX(LCD_DC0,         RSVD1,        NORMAL, NORMAL,   OUTPUT),
 	DEFAULT_PINMUX(LCD_DC1,		RSVD1,			NORMAL,    NORMAL,	OUTPUT),	 //SENSOR_LDO_EN_2 (MPU6050 - VLOGIC)
 	DEFAULT_PINMUX(GMI_CS7_N,		GMI,			 PULL_UP,	NORMAL,	INPUT), /* VOL_KEY_UP */
-	DEFAULT_PINMUX(GMI_CS0_N,		RSVD,			 PULL_UP,	NORMAL, 	INPUT),  //MUIC_INIT
+	DEFAULT_PINMUX(GMI_CS0_N,		GMI,			 PULL_UP,	NORMAL, INPUT),  //MUIC_INIT
 	DEFAULT_PINMUX(SPI2_MISO,       GMI,         	NORMAL, NORMAL,     OUTPUT),  //PROXI_LDO_EN (APDS990x - VDD)
 	DEFAULT_PINMUX(LCD_PWR0,        DISPLAYA,        NORMAL, NORMAL,   OUTPUT),
 	DEFAULT_PINMUX(LCD_PCLK,        DISPLAYA,        NORMAL,    NORMAL,     INPUT),		//LCD_RGB_PCLK
@@ -289,7 +285,7 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	DEFAULT_PINMUX(UART3_RTS_N,     UARTC,           NORMAL,   NORMAL,     OUTPUT), //BT_CTS_AP_RTS
 
 	DEFAULT_PINMUX(GPIO_PU4,        PWM1,            NORMAL,    TRISTATE,   INPUT),
-	DEFAULT_PINMUX(GPIO_PU5,        RSVD,            PULL_DOWN,    NORMAL,   OUTPUT), //cheol.gwak 0109 host-active
+	DEFAULT_PINMUX(GPIO_PU5,        RSVD1,           PULL_DOWN,    NORMAL,   OUTPUT), //cheol.gwak 0109 host-active
 	DEFAULT_PINMUX(GPIO_PU6,        PWM3,            PULL_DOWN,    NORMAL,   INPUT),  //                                       
 
 	/* I2S3 - Bluetooth BCM4330 PCM I/F */
@@ -307,10 +303,10 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	DEFAULT_PINMUX(GMI_ADV_N,       GMI,             NORMAL,    NORMAL,     INPUT),
 	DEFAULT_PINMUX(GMI_CLK,         GMI,             NORMAL,    NORMAL,     INPUT),
 	DEFAULT_PINMUX(GMI_CS0_N,       GMI,             PULL_UP,   TRISTATE,   INPUT),
-	DEFAULT_PINMUX(GMI_CS1_N,       RSVD,             PULL_UP,   NORMAL,   INPUT),
+	DEFAULT_PINMUX(GMI_CS1_N,       RSVD1,             PULL_UP,   NORMAL,   INPUT),
 	DEFAULT_PINMUX(GMI_CS2_N,       RSVD1,             NORMAL,   NORMAL,     OUTPUT),
 	DEFAULT_PINMUX(GMI_CS3_N,       RSVD1,             NORMAL,   NORMAL,     OUTPUT),
-	DEFAULT_PINMUX(GMI_CS4_N,       RSVD,             PULL_UP,   NORMAL,   INPUT),  //PROX_AMBIENT_INT (APDS990x - INT)
+	DEFAULT_PINMUX(GMI_CS4_N,       RSVD4,             PULL_UP,   NORMAL,   INPUT),  //PROX_AMBIENT_INT (APDS990x - INT)
 	DEFAULT_PINMUX(GMI_CS6_N,       GMI,             PULL_UP,   NORMAL,     INPUT),
 
 	DEFAULT_PINMUX(GMI_AD0,         GMI,             NORMAL,    TRISTATE,   INPUT),
@@ -325,15 +321,15 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	DEFAULT_PINMUX(GMI_AD9,         GMI,             PULL_DOWN, NORMAL,   INPUT),
 	DEFAULT_PINMUX(GMI_AD10,        GMI,             NORMAL, NORMAL,   OUTPUT),
 	DEFAULT_PINMUX(GMI_AD11,        PWM3,             NORMAL, NORMAL,   OUTPUT),
-	DEFAULT_PINMUX(GMI_AD12,        RSVD,             PULL_UP,    NORMAL,   INPUT),  //SENSOR_INT (MPU6050 - INT)
-	DEFAULT_PINMUX(GMI_AD13,        RSVD,             PULL_UP,    NORMAL,   INPUT),  //COMPASS_READY (AMI306 - DRDY)
+	DEFAULT_PINMUX(GMI_AD12,        RSVD4,             PULL_UP,    NORMAL,   INPUT),  //SENSOR_INT (MPU6050 - INT)
+	DEFAULT_PINMUX(GMI_AD13,        RSVD4,             PULL_UP,    NORMAL,   INPUT),  //COMPASS_READY (AMI306 - DRDY)
 	DEFAULT_PINMUX(GMI_AD14,        GMI,            NORMAL,    NORMAL,  OUTPUT),     //SENSOR_LDO_EN_2 (MPU6050 - VLOGIC)
 	DEFAULT_PINMUX(GMI_AD15,        GMI,             NORMAL,    TRISTATE,   INPUT),
 
 	DEFAULT_PINMUX(GMI_A16,         UARTD,             NORMAL,    NORMAL,   OUTPUT),
 	DEFAULT_PINMUX(GMI_A17,         UARTD,             NORMAL,    NORMAL,   INPUT),
 
-	DEFAULT_PINMUX(GMI_A18,         RSVD,             PULL_DOWN,    NORMAL,   OUTPUT),	//RGB_IC_EN
+	DEFAULT_PINMUX(GMI_A18,         UARTD,             PULL_DOWN,    NORMAL,   OUTPUT),	//RGB_IC_EN
 	DEFAULT_PINMUX(GMI_A19,         UARTD,             NORMAL,    NORMAL,   OUTPUT),
 
 	DEFAULT_PINMUX(GMI_WR_N,        GMI,             NORMAL,    NORMAL,     INPUT),
@@ -349,14 +345,14 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	DEFAULT_PINMUX(GPIO_PBB6,       VGP6,            NORMAL,    NORMAL,   INPUT),
 	DEFAULT_PINMUX(GPIO_PBB7,       I2S4,            NORMAL,    TRISTATE,   INPUT),
 
-	DEFAULT_PINMUX(GPIO_PCC1,       RSVD,            NORMAL,   NORMAL,   OUTPUT), //MUIC_INIT
-	DEFAULT_PINMUX(GPIO_PCC2,       RSVD,            NORMAL,   NORMAL,     OUTPUT), //MUIC_INIT
+	DEFAULT_PINMUX(GPIO_PCC1,       RSVD3,            NORMAL,   NORMAL,   OUTPUT), //MUIC_INIT
+	DEFAULT_PINMUX(GPIO_PCC2,       RSVD2,            NORMAL,   NORMAL,     OUTPUT), //MUIC_INIT
 
 	DEFAULT_PINMUX(JTAG_RTCK,       RTCK,            NORMAL,    NORMAL,     OUTPUT),
 
 	/*  KBC keys */
 	DEFAULT_PINMUX(KB_ROW1,         KBC,             PULL_UP, NORMAL,     INPUT),
-	DEFAULT_PINMUX(KB_ROW2,       	RSVD,		 PULL_DOWN, NORMAL,		OUTPUT), //YJChae  20111026 change KEY_LED for GPIO
+	DEFAULT_PINMUX(KB_ROW2,       	RSVD4,		 PULL_DOWN, NORMAL,		OUTPUT), //YJChae  20111026 change KEY_LED for GPIO
 
 	DEFAULT_PINMUX(KB_COL0,         KBC,             PULL_UP,   NORMAL,     INPUT),
 	DEFAULT_PINMUX(KB_COL1,         KBC,             NORMAL,   NORMAL,     OUTPUT), // TOUCH_LDO_EN
@@ -365,8 +361,8 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	DEFAULT_PINMUX(KB_COL4,         KBC,             PULL_UP,   NORMAL,     INPUT),
 	DEFAULT_PINMUX(KB_COL5,         KBC,             PULL_UP,   NORMAL,     INPUT),
 
-	DEFAULT_PINMUX(KB_ROW3,         RSVD2,           NORMAL, NORMAL,     OUTPUT),  //PROXI_LDO_EN (APDS990x - VDD)
-	DEFAULT_PINMUX(KB_ROW4,         RSVD,             PULL_DOWN, NORMAL,     OUTPUT),
+	DEFAULT_PINMUX(KB_ROW3,         RSVD3,           NORMAL, NORMAL,     OUTPUT),  //PROXI_LDO_EN (APDS990x - VDD)
+	DEFAULT_PINMUX(KB_ROW4,         RSVD4,             PULL_DOWN, NORMAL,     OUTPUT),
 	DEFAULT_PINMUX(KB_ROW6,         KBC,             PULL_DOWN, NORMAL,     INPUT),
 	DEFAULT_PINMUX(KB_ROW7,         KBC,             PULL_DOWN, NORMAL,     INPUT),
 	DEFAULT_PINMUX(KB_ROW8,         KBC,             PULL_UP, NORMAL,     INPUT),
@@ -376,8 +372,8 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 	DEFAULT_PINMUX(KB_ROW11,        KBC,             PULL_DOWN, NORMAL,     OUTPUT), //BT_WAKEUP
 	DEFAULT_PINMUX(KB_ROW12,        KBC,             PULL_DOWN, NORMAL,     INPUT),  //BT_HOST_WAKEUP
 	DEFAULT_PINMUX(KB_ROW13,        KBC,             PULL_UP, NORMAL,     INPUT),  //CP_CRASH_INT
-	DEFAULT_PINMUX(KB_ROW14,        RSVD,            NORMAL,    NORMAL,     INPUT),	 //Suspend request - cheol.gwak 0109
-	DEFAULT_PINMUX(KB_ROW15,        RSVD,		     PULL_DOWN, NORMAL,	    OUTPUT), //Slave-wakeup - cheol.gwak 0109
+	DEFAULT_PINMUX(KB_ROW14,        KBC,             NORMAL,    NORMAL,     INPUT),	 //Suspend request - cheol.gwak 0109
+	DEFAULT_PINMUX(KB_ROW15,        KBC,		     PULL_DOWN, NORMAL,	    OUTPUT), //Slave-wakeup - cheol.gwak 0109
 
 	DEFAULT_PINMUX(GPIO_PV0,        RSVD,            PULL_UP,   NORMAL,     INPUT),  //Host-wakeup - Active low so default is high
 	DEFAULT_PINMUX(GPIO_PV1,        RSVD,          NORMAL,    NORMAL,   OUTPUT), //MUIC_INIT
@@ -415,10 +411,10 @@ static __initdata struct tegra_pingroup_config vu10_pinmux[] = {
 #endif
 
 #if defined(CONFIG_LGE_NFC_PN544)
-	DEFAULT_PINMUX(SPI2_CS1_N,      RSVD,            NORMAL,    NORMAL,     INPUT),  //NFC_IRQ
+	DEFAULT_PINMUX(SPI2_CS1_N,      SPI2,            NORMAL,    NORMAL,     INPUT),  //NFC_IRQ
 	DEFAULT_PINMUX(SPI1_MOSI,       SPI2,            NORMAL,    NORMAL,     OUTPUT), // TOUCH_LDO_EN2
-	DEFAULT_PINMUX(SPI1_SCK,        RSVD,            NORMAL,    NORMAL,     OUTPUT), //NFC_VEN
-	DEFAULT_PINMUX(KB_ROW0,         RSVD,             NORMAL, NORMAL,     OUTPUT),	//NFC_MODE
+	DEFAULT_PINMUX(SPI1_SCK,        SPI1,            NORMAL,    NORMAL,     OUTPUT), //NFC_VEN
+	DEFAULT_PINMUX(KB_ROW0,         RSVD4,           NORMAL,    NORMAL,     OUTPUT),	//NFC_MODE
 #else
 	DEFAULT_PINMUX(SPI2_CS1_N,      SPI2,            PULL_UP,   TRISTATE,   INPUT),
 	DEFAULT_PINMUX(SPI1_MOSI,       SPI2,            NORMAL,    NORMAL,     OUTPUT), // TOUCH_LDO_EN2
