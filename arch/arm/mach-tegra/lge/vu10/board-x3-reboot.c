@@ -194,8 +194,6 @@ static ssize_t x3_rs_reset_read(struct device *dev, struct device_attribute *att
 }
 
 #ifdef CONFIG_TEGRA_WATCHDOG
-
-
 void x3_wdt_enable(const char *tag, int timeout)
 {
 	struct tegra_wdt *wdt = platform_get_drvdata(tegra_wdt_dev);
@@ -337,4 +335,3 @@ module_init(x3_rs_init);
 module_exit(x3_rs_exit);
 
 MODULE_LICENSE("Dual BSD/GPL");
-
