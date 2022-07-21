@@ -32,11 +32,9 @@
 #include <mach-tegra/gpio-names.h>
 #include <mach-tegra/board.h>
 #include <lge/board-x3.h>
-#include "../../../include/asm/hw_irq.h" //                                                   
+#include "../../../include/asm/hw_irq.h"
 
-//                                                         
 #define X3_WLAN_RST	TEGRA_GPIO_PV3
-//                                                       
 #define X3_WLAN_WOW	TEGRA_GPIO_PU6
 #define X3_SD_CD TEGRA_GPIO_PW5
 #define X3_SD_WP TEGRA_GPIO_PT3
@@ -45,7 +43,6 @@ static void (*wifi_status_cb)(int card_present, void *dev_id);
 static void *wifi_status_cb_devid;
 static int x3_wifi_status_register(void (*callback)(int , void *), void *);
 
-//                                                         
 static int x3_wifi_reset(int on);
 static int x3_wifi_power(int on);
 static int x3_wifi_set_carddetect(int val);
