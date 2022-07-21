@@ -40,11 +40,10 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 #include <mach-tegra/baseband-xmm-power.h>
-//                                         
+
 #if defined(CONFIG_MACH_PEGASUS)
-#include <mach/tegra-bb-power.h> //dalyong.cha
+#include <mach/tegra-bb-power.h>
 #endif	
-//                                         
 
 #define XMM6260_GPIO_BB_RST			MODEM_RESET
 #define XMM6260_GPIO_BB_ON			MODEM_PWR_ON
@@ -74,7 +73,6 @@ struct baseband_power_platform_data tegra_baseband_power_data = {
 	},                                                               
 };                                                                      
 
-																		
 static struct platform_device tegra_baseband_power_device = {           
 	.name = "baseband_xmm_power",                                        
 	.id = -1,                                                        
@@ -121,32 +119,6 @@ static struct tegra_usb_platform_data tegra_ehci2_hsic_imc_pdata = {
 	.ops = &hsic_imc_plat_ops,
 };
 
-/*
-static struct tegra_uhsic_config uhsic_phy_config = {
-	.enable_gpio = (-1), //TPS80031_GPIO_SMPS3,
-	.reset_gpio = (-1),
-#if defined(CONFIG_MACH_X3_FLASHLESS)	
-	.bb_data = &tegra_baseband_power_data,
-#endif	
-	.sync_start_delay = 9,
-	.idle_wait_delay = 17,
-	.term_range_adj = 0,
-	.elastic_underrun_limit = 16,
-	.elastic_overrun_limit = 16,
-	.postsuspend = x3_usb_hsic_postsuspend,
-	.preresume = x3_usb_hsic_preresume,
-	.usb_phy_ready = x3_usb_hsic_phy_ready,
-	.post_phy_off = x3_usb_hsic_phy_off,
-};
-
-static struct tegra_ehci_platform_data tegra_ehci_uhsic_pdata = {
-	.phy_type = TEGRA_USB_PHY_TYPE_HSIC,
-	.phy_config = &uhsic_phy_config,
-	.operating_mode = TEGRA_USB_HOST,
-	.power_down_on_bus_suspend = 0,
-};
-*/
-
 static int x3_usb_hsic_postsuspend(void)
 {
 	printk("%s\n", __func__);
@@ -166,7 +138,6 @@ static int x3_usb_hsic_preresume(void)
 	return 0;
 }
 
-//                                             
 #ifdef CONFIG_TEGRA_BB_MODEM4
 extern int rmc_usb_hsic_phy_ready(void);
 #endif
@@ -180,7 +151,6 @@ static int x3_usb_hsic_phy_ready(void)
 #endif
 	return 0;
 }
-//                                             
 
 static int x3_usb_hsic_phy_off(void)
 {
@@ -251,13 +221,10 @@ static int __init tegra_uhsic_init(void)
 					&tegra_usb_hsic_host_unregister;
 
 	platform_device_register(&tegra_baseband_power_device); 
-//	platform_device_register(&tegra_baseband_power2_device);
 	return 0;
 }
 
-//                                   
 #if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_TEGRA_BB_MODEM4)
-
 static union tegra_bb_gpio_id modem4_gpio_id = {
 	.modem4 = {
 		.mdm4_rst = BB_GPIO_MDM4_RST,
@@ -286,6 +253,7 @@ static struct platform_device tegra_baseband_modem4_device = {
 	},
 };
 #endif
+
 int __init x3_baseband_init(void)
 {
 #if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_TEGRA_BB_MODEM4)
@@ -300,6 +268,4 @@ int __init x3_baseband_init(void)
 	tegra_uhsic_init();
 #endif
 	return 0;
-//                                   
 }
-

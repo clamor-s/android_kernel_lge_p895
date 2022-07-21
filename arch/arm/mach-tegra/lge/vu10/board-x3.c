@@ -63,10 +63,7 @@
 #include <mach-tegra/pm.h>
 #include <mach/thermal.h>
 
-//                                                       
-//#include <lge/gps_gpio.h>
 #include <lge/board-x3-gps.h>
-//                                                       
 
 #if defined(CONFIG_LGE_BATTERY)
 #include <linux/power/lge_battery.h>
@@ -162,8 +159,6 @@ static struct tegra_thermal_data thermal_data = {
 #endif
 };
 
-
-
 static __initdata struct tegra_clk_init_table x3_clk_init_table[] = {
 	/* name		parent		rate		enabled */
 	{ "pll_m",	NULL,		0,		false},
@@ -198,12 +193,6 @@ static __initdata struct tegra_clk_init_table x3_clk_init_table[] = {
 static __initdata struct tegra_clk_init_table x3_clk_i2s2_table[] = {
 	/* name		parent		rate		enabled */
 	{ "i2s2",	"pll_a_out0",	0,		false},
-	{ NULL,		NULL,		0,		0},
-};
-
-static __initdata struct tegra_clk_init_table x3_clk_i2s4_table[] = {
-	/* name		parent		rate		enabled */
-	{ "i2s4",	"pll_a_out0",	0,		false},
 	{ NULL,		NULL,		0,		0},
 };
 
@@ -301,7 +290,6 @@ static void __init x3_uart_init(void)
 
 
 #if defined(CONFIG_RTC_DRV_TEGRA)	
-
 static struct resource tegra_rtc_resources[] = {
 	[0] = {
 		.start = TEGRA_RTC_BASE,
@@ -328,105 +316,17 @@ static struct platform_device tegra_camera = {
 	.id = -1,
 };
 
-static struct resource ram_console_resources[] = {
-	{
-		.flags = IORESOURCE_MEM,
-	},
-};
-
-/*
-static struct platform_device ram_console_device = {
-	.name 		= "ram_console",
-	.id 		= -1,
-	.num_resources	= ARRAY_SIZE(ram_console_resources),
-	.resource	= ram_console_resources,
-};
-*/
-//                                              
-#if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_MHI_NETDEV)
-struct platform_device mhi_netdevice0 = {
-  .name = "mhi_net_device",
-  .id = 0,
-};
-#endif /* CONFIG_MHI_NETDEV */
-//                                              
-
-//                                              
 struct platform_device hsic_netdevice0 = {
   .name = "hsic_net_device",
   .id = 0,
 };
-/* -SDR */
-
-#if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_TEGRA_BB_MODEM4)
-struct platform_device modem_boot_hsic0 = {
-  .name = "modem_boot_hsic",
-  .id = 0,
-};
-#endif	
-//                                              
-
-#if defined( CONFIG_USB_ANDROID_CDC_ECM) 
-static struct usb_ether_platform_data ecm_pdata = {
-	.vendorID	= 0x1004,
-	.vendorDescr	= USB_DEVICE_NAME , //                        
-};
-
-static struct platform_device tegra_usb_ecm_device = {
-	.name		= "ecm",	
-	.id		= -1,
-	.dev		= {
-	.platform_data = &ecm_pdata,
-	},
-};
-#endif
-
-#ifdef CONFIG_USB_ANDROID_ACM
-/*           
-                                                        
-                                   
- */
-struct acm_platform_data acm_pdata = {
-	.num_inst       = 1,
-};
-
-struct platform_device acm_device = {
-	.name   = "acm",
-	.id     = -1,
-	.dev    = {
-		.platform_data = &acm_pdata,
-	},
-};
-#endif
-
-#ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
-/*           
-                                                           
-                                      
-                                   
- */
-struct usb_cdrom_storage_platform_data cdrom_storage_pdata = {
-	.nluns      = 1,
-	.vendor     = USB_MANUFACTURER_NAME,
-	.product    = USB_DEVICE_NAME,
-	.release    = 0x0100,
-};
-
-struct platform_device usb_cdrom_storage_device = {
-	.name   = "usb_cdrom_storage",
-	.id = -1,
-	.dev    = {
-		.platform_data = &cdrom_storage_pdata,
-	},
-};
-#endif
 
 #if defined(CONFIG_LGE_BATTERY)
 static struct lge_battery_platform_data lge_battery_plat = {
 	.gauge_name     = "fuelgauge",
 	.charger_name   = "charger",
 #if (CONFIG_ADC_TSC2007)
-	.adc_name		= "tsc2007_adc",	//                                        
+	.adc_name		= "tsc2007_adc",
 #endif	
 };
 
@@ -439,27 +339,24 @@ static struct platform_device lge_battery_device = {
 };
 #endif
 
-#if defined(CONFIG_BACKLIGHT_LM353X) //YJChae_S 20111124 add for touchkeyled
+#if defined(CONFIG_BACKLIGHT_LM353X)
 struct platform_device keypad_led_device = {
 	.name   = "button-backlight",
 	.id = -1,
 }; 
 #endif
 
-/*                                                        */
 #if defined(CONFIG_LEDS_VU10_PWRKEY)
 struct platform_device power_led_device = {
 	.name   = "power-key-led",
 	.id = -1,
 };
 #endif
-/*                                                        */
 
 struct platform_device lge_mtc_eta_log_device = {
 	.name = "lge_mtc_eta_logger",
 	.id = -1,		
 };
-
 
 static struct platform_device *x3_devices[] __initdata = {
 	&tegra_pmu_device,
@@ -493,35 +390,19 @@ static struct platform_device *x3_devices[] __initdata = {
 #if defined(CONFIG_CRYPTO_DEV_TEGRA_AES)
 	&tegra_aes_device,
 #endif
-#if defined(CONFIG_TSPDRV) //                               
+#if defined(CONFIG_TSPDRV)
 	&tegra_pwfm3_device,
 #endif
-	&tegra_hda_device,
-#if defined(CONFIG_BACKLIGHT_LM353X) //YJChae_S 20111124 add for touchkeyled
-	&keypad_led_device, //YJChae
+#if defined(CONFIG_BACKLIGHT_LM353X)
+	&keypad_led_device,
 #endif	
 	&lge_mtc_eta_log_device,
-
-/*                                                        */
 #if defined(CONFIG_LEDS_VU10_PWRKEY)
 	&power_led_device,
 #endif
-/*                                                        */
-//                                                                              
 #if defined(CONFIG_BD_ADDRESS)
 	&bd_address_device,
 #endif
-//                                              
-#if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_MHI_NETDEV)
-    &mhi_netdevice0,  /* MHI netdevice */
-#endif /* CONFIG_MHI_NETDEV */
-//                                              
-
-//                                              
-#if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_TEGRA_BB_MODEM4)
-//	&modem_boot_hsic0,
-#endif
-//                                             
 };
 
 static struct platform_device *x3_audio_devices[] __initdata = {
@@ -530,13 +411,13 @@ static struct platform_device *x3_audio_devices[] __initdata = {
     &tegra_dam_device1,
     &tegra_dam_device2,
     &tegra_i2s_device0,
-    &tegra_i2s_device1,     //                                             
+    &tegra_i2s_device1,
     &tegra_i2s_device2,
     &tegra_i2s_device3,
     &tegra_spdif_device,
     &spdif_dit_device,
-    &bluetooth_dit_device,  //                                             
-    &baseband_dit_device,   //                                             
+    &bluetooth_dit_device,
+    &baseband_dit_device,
     &tegra_pcm_device,
     &x3_audio_device,
 };
@@ -549,128 +430,6 @@ static void x3_audio_init(void)
 #endif
     platform_add_devices(x3_audio_devices, ARRAY_SIZE(x3_audio_devices));
 }
-
-int x3_read_misc(int index, char* buf, int size)
-{
-    int h_file = 0;
-    int ret = 0;
-    int offset = 0;
-    mm_segment_t oldfs;
-    
-    if(buf == NULL) return 0;	
-    if(size > MISC_MSG_LENGTH) return 0;
-	
-    
-    oldfs = get_fs();
-    set_fs(KERNEL_DS);
-    h_file = sys_open(MISC_PARTITION, O_RDWR,0);
-
-    if(h_file >= 0)
-    {
-        offset = MISC_MSG_BASE_OFFSET + (MISC_MSG_LENGTH * index);
-	pr_info("read MISC size = %d, offset = %d\n",size, offset);			
-        sys_lseek( h_file, offset, 0 );
-
-        ret = sys_read( h_file, buf, size);
-	pr_info("read MISC ret = %d\n",ret);	
-        if( ret != size )
-        {
-            pr_err("Can't reade MISC partition.\n");
-            return 0;
-        }
-
-        sys_close(h_file);
-    }
-    else
-    {
-        pr_err("Can't open MISC partition handle = %d.\n", h_file);
-        return 0;
-    }
-
-    set_fs(oldfs);
-
-    pr_info("read MISC index = %d, message = %s\n", index, buf);
-
-    return ret;
-}
-int x3_write_misc(int index, char* buf, int size)
-{
-    int h_file = 0;
-    int ret = 0;
-    int offset = 0;
-     mm_segment_t oldfs;
-	
-    if(buf == NULL) return 0;
-    if(size > MISC_MSG_LENGTH) return 0;
-
-    
-    oldfs = get_fs();
-	
-    set_fs(KERNEL_DS);
-	
-    h_file = sys_open(MISC_PARTITION, O_RDWR,0);
-
-    if(h_file >= 0)
-    {
-        offset = MISC_MSG_BASE_OFFSET + (MISC_MSG_LENGTH * index);
-	pr_info("write MISC size = %d, offset = %d\n",size, offset);	
-        sys_lseek( h_file, offset, 0 );
-
-        ret = sys_write( h_file, buf, size);
-	pr_info("write MISC ret = %d\n",ret);	
-        if( ret != size )
-        {
-            pr_err("Can't write MISC partition.\n");
-            return ret;
-        }
-
-        sys_close(h_file);
-    }
-    else
-    {
-        pr_err("Can't open MISC partition handle = %d.\n", h_file);
-        return 0;
-    }
-
-    set_fs(oldfs);
-	
-    sys_sync();
-	
-    pr_info("write MISC index = %d, message = %s\n", index, buf);
-
-    return ret;
-}
-
-int get_misc_msg(misc_msg_type msg, char* misc_msg, int size)
-{
-	int ret = 0;
-    pr_info("start get_misc_msg");
-	if(misc_msg == NULL) return ret;
-	if((msg > MISC_MSG_COUNT) || (msg < 0)) return ret;	
-	if((size > MISC_MSG_LENGTH ) || (size == 0 ) ) return ret;
-	
-	ret = x3_read_misc(msg, misc_msg, size);
-
-	if(ret == 0 ) return ret;
-	
-	return ret;
-}
-
-int set_misc_msg(misc_msg_type msg, char* misc_msg, int size)
-{
-	int ret = 0;
-
-	if(misc_msg == NULL) return ret;
-	if((msg > MISC_MSG_COUNT) || (msg < 0)) return ret;
-	if((size > MISC_MSG_LENGTH ) || (size == 0 ) ) return ret;
-	
-	ret = x3_write_misc(msg, misc_msg, size);
-
-	if(ret == 0 ) return ret;
-	
-	return ret;
-}
-
 
 hw_rev_pcb_type x3_get_hw_rev_pcb_version(void)
 {
@@ -718,7 +477,6 @@ if(is_tegra_bootmode())
 	x3_sensor_input_init();
 	tegra_serial_debug_init(TEGRA_UARTD_BASE, INT_WDT_CPU, NULL, -1, -1);
 }
-
 
 static void __init tegra_x3_reserve(void)
 {

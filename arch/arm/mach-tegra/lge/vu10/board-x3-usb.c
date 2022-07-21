@@ -54,7 +54,7 @@ static struct usb_mass_storage_platform_data tegra_usb_fsg_platform = {
 	.vendor = "NVIDIA",
 	.product = "Tegra 3",
 	.nluns = 1,
-#endif//	
+#endif
 };
 
 struct platform_device tegra_usb_fsg_device = {
@@ -65,14 +65,13 @@ struct platform_device tegra_usb_fsg_device = {
 	},
 };
 
-//                                                                
 #if CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET
 static char *usb_functions_all     [] = {
 #ifdef CONFIG_USB_ANDROID_MTP
 	"mtp",
 #endif
 #ifdef CONFIG_USB_ANDROID_ACCESSORY
-        "accessory",
+	"accessory",
 #endif
 	"acm",
 	"serial",
@@ -80,6 +79,7 @@ static char *usb_functions_all     [] = {
 	"usb_mass_storage",
 	"adb"
 };
+
 static char *usb_functions_PID_61a6[] = {    "usb_mass_storage",    "adb",};
 #ifdef CONFIG_USB_ANDROID_MTP
 static char *usb_functions_PID_61f9[] = {    "mtp",   "adb",   };
@@ -100,7 +100,7 @@ static char *usb_functions_accessory[] = {    "accessory",};
 static char *usb_functions_accessory_adb[] = {"accessory","adb",};
 #endif
 
-#else   //                                     
+#else
 
 static char *usb_functions_mtp_ums[] = { "mtp", "usb_mass_storage" };
 static char *usb_functions_adb[] = { "mtp", "adb", "usb_mass_storage" };
@@ -126,7 +126,7 @@ static char *usb_functions_all[] = {
 	"adb",
 	"usb_mass_storage"
 };
-#endif  //                                     
+#endif
 
 static struct android_usb_product usb_products[] = {
 #if   CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET  
@@ -240,7 +240,7 @@ static struct android_usb_product usb_products[] = {
 		.functions      = usb_functions_rndis_adb,
 	},
 #endif
-#endif  //                                     
+#endif
 };
 
 /* standard android USB platform data */
@@ -252,8 +252,8 @@ struct android_usb_platform_data andusb_plat = {
 	.serial_number			= NULL,
 	.num_products = ARRAY_SIZE(usb_products),
 	.products = usb_products,
-	.num_functions = ARRAY_SIZE(usb_functions_all),  //                                                         
-	.functions = usb_functions_all,                  //                                                         
+	.num_functions = ARRAY_SIZE(usb_functions_all),
+	.functions = usb_functions_all,
 };
 
 struct platform_device androidusb_device = {
@@ -287,12 +287,7 @@ static struct tegra_usb_platform_data tegra_udc_pdata = {
 	.phy_intf = TEGRA_USB_PHY_INTF_UTMI,
 	.op_mode = TEGRA_USB_OPMODE_DEVICE,
 	.u_data.dev = {
-
-#if defined(CONFIG_MFD_TPS80031)
-		.vbus_pmu_irq = ENT_TPS80031_IRQ_BASE +
-				TPS80031_INT_VBUS_DET,
-		.vbus_gpio = -1,
-#elif defined(CONFIG_MFD_MAX77663)	//                                                      
+#if defined(CONFIG_MFD_MAX77663)
 		.vbus_pmu_irq = MAX77663_IRQ_BASE + MAX77663_IRQ_ONOFF_ACOK_FALLING,
 		.vbus_gpio = MAX77663_GPIO_BASE + MAX77663_GPIO1,
 #else
@@ -340,7 +335,6 @@ static struct tegra_usb_platform_data tegra_ehci1_utmi_pdata = {
 		.xcvr_use_fuses = 1,
 	},
 };
-
 
 #ifdef CONFIG_USB_OTG
 static struct platform_device *tegra_usb_otg_host_register(void)

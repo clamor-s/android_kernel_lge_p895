@@ -74,8 +74,6 @@ int x3_suspend_init(void);
 int x3_edp_init(void);
 void x3_bpc_mgmt_init(void);
 int x3_sensor_input_init(void);
-int get_misc_msg(misc_msg_type msg, char* misc_msg, int size);
-int set_misc_msg(misc_msg_type msg, char* misc_msg, int size);
 hw_rev_pcb_type x3_get_hw_rev_pcb_version(void);
 
 

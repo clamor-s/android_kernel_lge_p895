@@ -180,505 +180,31 @@ static inline void x3_msleep(u32 t)
 	usleep_range(t*1000, t*1000 + 500);
 }
 
-/*
-static struct i2c_board_info x3_i2c0_isl_board_info[] = {
-	{
-		I2C_BOARD_INFO("isl29028", 0x44),
-	}
-};
-*/
-
-#ifdef CONFIG_SENSORS_ISL29028	
-static void x3_isl_init(void)
-{
-	i2c_register_board_info(0, x3_i2c0_isl_board_info,
-				ARRAY_SIZE(x3_i2c0_isl_board_info));
-}
-#endif
-
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
-
-enum CAMERA_INDEX {
-	CAM_REAR_LEFT,
-	CAM_REAR_RIGHT,
-	CAM_FRONT,
-	NUM_OF_CAM
-};
-
-struct x3_power_rail {
-	struct regulator *cam_reg;
-	struct regulator *csi_reg;
-};
-
-static struct x3_power_rail ent_vicsi_pwr[NUM_OF_CAM];
-
-static int x3_cam_pwr(enum CAMERA_INDEX cam, bool pwr_on)
-{
-	struct x3_power_rail *reg_cam = &ent_vicsi_pwr[cam];
-	int ret = 0;
-
-	/*
-	* SW must turn on 1.8V first then 2.8V
-	* SW must turn off 2.8V first then 1.8V
-	*/
-	if (pwr_on) {
-		if (reg_cam->csi_reg == NULL) {
-			reg_cam->csi_reg = regulator_get(NULL,
-						"avdd_dsi_csi");
-			if (IS_ERR_OR_NULL(reg_cam->csi_reg)) {
-				pr_err("%s: csi pwr err\n", __func__);
-				ret = PTR_ERR(reg_cam->csi_reg);
-				goto x3_cam_pwr_fail;
-			}
-		}
-
-		ret = regulator_enable(reg_cam->csi_reg);
-		if (ret) {
-			pr_err("%s: enable csi pwr err\n", __func__);
-			goto x3_cam_pwr_fail;
-		}
-
-		if (reg_cam->cam_reg == NULL) {
-			reg_cam->cam_reg = regulator_get(NULL,
-						"vddio_cam");
-			if (IS_ERR_OR_NULL(reg_cam->cam_reg)) {
-				pr_err("%s: vddio pwr err\n", __func__);
-				ret = PTR_ERR(reg_cam->cam_reg);
-				regulator_disable(reg_cam->csi_reg);
-				goto x3_cam_pwr_fail;
-			}
-		}
-
-		ret = regulator_enable(reg_cam->cam_reg);
-		if (ret) {
-			pr_err("%s: enable vddio pwr err\n", __func__);
-			regulator_disable(reg_cam->csi_reg);
-			goto x3_cam_pwr_fail;
-		}
-	} else {
-		if (reg_cam->cam_reg)
-			regulator_disable(reg_cam->cam_reg);
-
-		if (reg_cam->csi_reg)
-			regulator_disable(reg_cam->csi_reg);
-	}
-	return 0;
-
-x3_cam_pwr_fail:
-	if (!IS_ERR_OR_NULL(reg_cam->cam_reg))
-		regulator_put(reg_cam->cam_reg);
-	reg_cam->cam_reg = NULL;
-
-	if (!IS_ERR_OR_NULL(reg_cam->csi_reg))
-		regulator_put(reg_cam->csi_reg);
-	reg_cam->csi_reg = NULL;
-
-	return ret;
-}
-
-static int x3_ar0832_ri_power_on(int is_stereo)
-{
-	int ret = 0;
-
-	ret = x3_cam_pwr(CAM_REAR_RIGHT, true);
-
-	/* Release Reset */
-	if (is_stereo) {
-		gpio_set_value(CAM1_RST_L_GPIO, 1);
-		gpio_set_value(CAM2_RST_L_GPIO, 1);
-	} else
-		gpio_set_value(CAM1_RST_L_GPIO, 1);
-	/*
-	It takes 2400 EXTCLK for ar0832 to be ready for I2c.
-	EXTCLK is 10 ~ 24MHz. 1 ms should be enough to cover
-	at least 2400 EXTCLK within frequency range.
-	*/
-	x3_msleep(1);
-
-	return ret;
-}
-
-static int x3_ar0832_le_power_on(int is_stereo)
-{
-	int ret = 0;
-
-	pr_info("%s: ++\n", __func__);
-	ret = x3_cam_pwr(CAM_REAR_LEFT, true);
-
-	/* Release Reset */
-	gpio_set_value(CAM2_RST_L_GPIO, 1);
-
-	/*
-	It takes 2400 EXTCLK for ar0832 to be ready for I2c.
-	EXTCLK is 10 ~ 24MHz. 1 ms should be enough to cover
-	at least 2400 EXTCLK within frequency range.
-	*/
-	x3_msleep(1);
-
-	/* CSI B is shared between Front camera and Rear Left camera */
-	gpio_set_value(CAM_CSI_MUX_SEL_GPIO, 1);
-
-	return ret;
-}
-
-static int x3_ar0832_ri_power_off(int is_stereo)
-{
-	int ret;
-
-	pr_info("%s: ++\n", __func__);
-	ret = x3_cam_pwr(CAM_REAR_RIGHT, false);
-
-	/* Assert Reset */
-	if (is_stereo) {
-		gpio_set_value(CAM1_RST_L_GPIO, 0);
-		gpio_set_value(CAM2_RST_L_GPIO, 0);
-	} else
-		gpio_set_value(CAM1_RST_L_GPIO, 0);
-
-	return ret;
-}
-
-static int x3_ar0832_le_power_off(int is_stereo)
-{
-	int ret;
-
-	pr_info("%s: ++\n", __func__);
-	ret = x3_cam_pwr(CAM_REAR_LEFT, false);
-
-	/* Assert Reset */
-	gpio_set_value(CAM2_RST_L_GPIO, 0);
-
-	return ret;
-}
-
-static int x3_ov9726_power_on(void)
-{
-	pr_info("ov9726 power on\n");
-
-	/* switch mipi mux to front camera */
-	gpio_set_value(CAM_CSI_MUX_SEL_GPIO, CAM_CSI_MUX_SEL_FRONT);
-	x3_cam_pwr(CAM_FRONT, true);
-
-	return 0;
-}
-
-static int x3_ov9726_power_off(void)
-{
-	pr_info("ov9726 power off\n");
-
-	x3_cam_pwr(CAM_FRONT, false);
-
-	return 0;
-}
-
-struct ov9726_platform_data x3_ov9726_data = {
-	.power_on = x3_ov9726_power_on,
-	.power_off = x3_ov9726_power_off,
-	.gpio_rst = CAM3_RST_L_GPIO,
-	.rst_low_active = true,
-	.gpio_pwdn = CAM3_PWDN_GPIO,
-	.pwdn_low_active = false,
-};
-
-static struct tps61050_pin_state x3_tps61050_pinstate = {
-	.mask		= 0x0008, /*VGP3*/
-	.values		= 0x0008,
-};
-
-/* I2C bus becomes active when vdd_1v8_cam is enabled */
-static int x3_tps61050_pm(int pwr)
-{
-	static struct regulator *x3_flash_reg = NULL;
-	int ret = 0;
-
-	pr_info("%s: ++%d\n", __func__, pwr);
-	switch (pwr) {
-	case TPS61050_PWR_OFF:
-		if (x3_flash_reg) {
-			regulator_disable(x3_flash_reg);
-			regulator_put(x3_flash_reg);
-			x3_flash_reg = NULL;
-		}
-		break;
-	case TPS61050_PWR_STDBY:
-	case TPS61050_PWR_COMM:
-	case TPS61050_PWR_ON:
-		x3_flash_reg = regulator_get(NULL, "vdd_1v8_cam");
-		if (IS_ERR_OR_NULL(x3_flash_reg)) {
-			pr_err("%s: failed to get flash pwr\n", __func__);
-			return PTR_ERR(x3_flash_reg);
-		}
-		ret = regulator_enable(x3_flash_reg);
-		if (ret) {
-			pr_err("%s: failed to enable flash pwr\n", __func__);
-			goto fail_regulator_flash_reg;
-		}
-		x3_msleep(10);
-		break;
-	default:
-		ret = -1;
-	}
-	return ret;
-
-fail_regulator_flash_reg:
-	regulator_put(x3_flash_reg);
-	x3_flash_reg = NULL;
-	return ret;
-}
-
-
-struct x3_cam_gpio {
-	int gpio;
-	const char *label;
-	int value;
-};
-
-#define TEGRA_CAMERA_GPIO(_gpio, _label, _value)	\
-	{						\
-		.gpio = _gpio,				\
-		.label = _label,			\
-		.value = _value,			\
-	}
-
-static struct x3_cam_gpio x3_cam_gpio_data[] = {
-	[0] = TEGRA_CAMERA_GPIO(CAM_CSI_MUX_SEL_GPIO, "cam_csi_sel", 1),
-	[1] = TEGRA_CAMERA_GPIO(CAM1_RST_L_GPIO, "cam1_rst_lo", 0),
-	[2] = TEGRA_CAMERA_GPIO(CAM2_RST_L_GPIO, "cam2_rst_lo", 0),
-	[3] = TEGRA_CAMERA_GPIO(CAM3_RST_L_GPIO, "cam3_rst_lo", 0),
-	[4] = TEGRA_CAMERA_GPIO(CAM3_PWDN_GPIO, "cam3_pwdn", 1),
-	[5] = TEGRA_CAMERA_GPIO(CAM_FLASH_EN_GPIO, "flash_en", 1),
-};
-
-static struct ar0832_platform_data x3_ar0832_ri_data = {
-	.power_on = x3_ar0832_ri_power_on,
-	.power_off = x3_ar0832_ri_power_off,
-	.id = "right",
-};
-
-static struct ar0832_platform_data x3_ar0832_le_data = {
-	.power_on = x3_ar0832_le_power_on,
-	.power_off = x3_ar0832_le_power_off,
-	.id = "left",
-};
-
-static struct tps61050_platform_data x3_tps61050_data = {
-	.cfg		= 0,
-	.num		= 1,
-	.max_amp_torch	= CAM_FLASH_MAX_TORCH_AMP,
-	.max_amp_flash	= CAM_FLASH_MAX_FLASH_AMP,
-	.pinstate	= &x3_tps61050_pinstate,
-	.init		= NULL,
-	.exit		= NULL,
-	.pm		= &x3_tps61050_pm,
-	.gpio_envm	= NULL,
-	.gpio_sync	= NULL,
-};
-#endif
-
-#if defined(CONFIG_VIDEO_AR0832)
-static int x3_ar0832_power_on(void)
-{  
-#if 0 
-  int ret;
-  ret = x3_camera_power_on();
-  return ret;
-#else
-  return 0;
-#endif
-}
-  
-static int x3_ar0832_power_off(void)
-{
-#if 0 
-  int ret;
-  ret = x3_camera_power_off();
-  return ret;
-#else
-  return 0;
-#endif
-}
-
-struct ar0832_platform_data x3_ar0832_data = {
-    .power_on = x3_ar0832_power_on,
-    .power_off = x3_ar0832_power_off,
-};
-
-#endif //defined(CONFIG_VIDEO_AR0832)
-
 #if defined(CONFIG_VIDEO_IMX111)
-#if 0 //hyojin.an 111104 
-static int x3_imx111_power_on(void)
-{  
-#if 0 
-  int ret;
-  ret = x3_camera_power_on();
-  return ret;
-#else
-  return 0;
-#endif
-}
-  
-static int x3_imx111_power_off(void)
-{
-#if 0 
-  int ret;
-  ret = x3_camera_power_off();
-  return ret;
-#else
-  return 0;
-#endif
-}
-#endif
-struct imx111_platform_data x3_imx111_data = {
-	//hyojin.an 111104 .power_on = x3_imx111_power_on,
-	//hyojin.an 111104 .power_off = x3_imx111_power_off,
-};
+struct imx111_platform_data x3_imx111_data = { };
 
-#endif //defined(CONFIG_VIDEO_IMX111)
-
-#if defined(CONFIG_VIDEO_MT9M114)
-
-static int x3_mt9m114_power_on(void)
-{
-#if 0  
-	int ret;
-	//struct board_info board_info;
-
-  pr_err("%s\n", __func__);
-	//tegra_get_board_info(&board_info);
-	//sub camera enable
-		tegra_gpio_enable(SUB_CAM_EN);
-		ret = gpio_request(SUB_CAM_EN, "sub_cam_en");
-		if (ret < 0)
-			pr_err("%s: gpio_request failed for gpio %s\n",
-				__func__, "SUB_CAM_EN");
-
-    		tegra_gpio_enable(SUB_CAM_RESET_N);
-		ret = gpio_request(SUB_CAM_RESET_N, "sub_cam_reset_n");
-		if (ret < 0)
-			pr_err("%s: gpio_request failed for gpio %s\n",
-				__func__, "SUB_CAM_RESET_N");
-
-		tegra_gpio_enable(SUB_CAM_PWDN);
-		ret = gpio_request(SUB_CAM_PWDN, "sub_cam_pwdn");
-		if (ret < 0)
-			pr_err("%s: gpio_request failed for gpio %s\n",
-				__func__, "SUB_CAM_PWDN");
-
-		gpio_direction_output(SUB_CAM_EN, 1);
-
-		gpio_set_value(SUB_CAM_EN, 1);
-  //I2C switch direction 1: out 0 : in (from AP30)
-		gpio_direction_output(CAM_I2C_SEL1, 1);
-		gpio_direction_output(CAM_I2C_SEL2, 1);
-		gpio_direction_output(CAM_SEL_3D, 0);
-    //I2C Switch set value
-    gpio_set_value(CAM_I2C_SEL1, 1);
-		gpio_set_value(CAM_I2C_SEL2, 1);
-		gpio_set_value(CAM_SEL_3D, 0);
-
-  //sub cam direction 1: out 0 : in (from AP30)
-		gpio_direction_output(SUB_CAM_RESET_N, 1);
-		gpio_direction_output(SUB_CAM_PWDN, 1);
-
-    //sub cam set value
-		gpio_set_value(SUB_CAM_RESET_N, 1);
-		gpio_set_value(SUB_CAM_PWDN, 1);
-#endif
-	return 0;
-}
-
-static int x3_mt9m114_power_off(void)
-{
-  pr_err("%s\n", __func__);
-	return 0;
-}
-
-struct mt9m114_platform_data x3_mt9m114_data = {
-//	.power_on = x3_mt9m114_power_on,
-//	.power_off = x3_mt9m114_power_off,
-};
-
-#endif //#if defined(CONFIG_VIDEO_MT9M114)
-
-#if defined(CONFIG_VIDEO_IMX119)
-struct imx119_platform_data x3_imx119_data = {
-};
-#endif
-
-
-/*
- * Since ar0832 driver should support multiple devices, slave
- * address should be changed after it is open. Default slave
- * address of ar0832 is 0x36. It will be changed to alternate
- * address defined below when device is open.
- */
- 
-#if defined(CONFIG_VIDEO_AR0832) // hyojin.an 110624
-static struct i2c_board_info ar0832_i2c2_boardinfo[] = {
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
-	{
-		/* 0x30: alternative slave address */
-		I2C_BOARD_INFO("ar0832", 0x36),
-		.platform_data = &x3_ar0832_ri_data,
-	},
-	{
-		/* 0x31: alternative slave address */
-		I2C_BOARD_INFO("ar0832", 0x32),
-		.platform_data = &x3_ar0832_le_data,
-	},
-	{
-		I2C_BOARD_INFO("tps61050", 0x33),
-		.platform_data = &x3_tps61050_data,
-	},
-	{
-		I2C_BOARD_INFO("ov9726", OV9726_I2C_ADDR >> 1),
-		.platform_data = &x3_ov9726_data,
-	},
-#else
-  	{
-  		I2C_BOARD_INFO("ar0832", 0x36),
-  		.platform_data = &x3_ar0832_data,
-  	},
-    //hyojin.an 110715 {
-    //hyojin.an 110715     I2C_BOARD_INFO("ar0832_focuser", 0x36),
-    //hyojin.an 110715 },
-#endif
-  };
-#endif //defined(CONFIG_VIDEO_AR0832)
-
-#if defined(CONFIG_VIDEO_IMX111)
 static struct i2c_board_info imx111_i2c2_boardinfo[] = {
-      {
-        //chen.yingchun 20111221 slave address change for conflict with LM3533 on rev.b board
-        //I2C_BOARD_INFO("imx111", 0x36),
-        I2C_BOARD_INFO("imx111", 0x10),
-        .platform_data = &x3_imx111_data,
-      },
-
-      {
-         //I2C_BOARD_INFO("imx111_focuser", 0x18),
+	{
+		//chen.yingchun 20111221 slave address change for conflict with LM3533 on rev.b board
+		//I2C_BOARD_INFO("imx111", 0x36),
+		I2C_BOARD_INFO("imx111", 0x10),
+		.platform_data = &x3_imx111_data,
+	},
+	{
+		//I2C_BOARD_INFO("imx111_focuser", 0x18),
 		I2C_BOARD_INFO("dw9714", 0x0c),
 		.platform_data  = &focuser_data,
-      },
-      
-      {
-         I2C_BOARD_INFO("lm3559",  0x53),
-         .platform_data  = &flash_led_data,
-      },
+	},  
+	{
+		I2C_BOARD_INFO("lm3559",  0x53),
+		.platform_data  = &flash_led_data,
+	},
 };
 #endif
 
-#if defined(CONFIG_VIDEO_MT9M114)
-static struct i2c_board_info mt9m114_i2c2_boardinfo[] = {
-	{
-		I2C_BOARD_INFO("mt9m114", 0x48),
-		.platform_data = &x3_mt9m114_data,
-	},
-};
-#endif //#if defined(CONFIG_VIDEO_MT9M114)
-
 #if defined(CONFIG_VIDEO_IMX119)
+struct imx119_platform_data x3_imx119_data = { };
+
 static struct i2c_board_info imx119_i2c2_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("imx119", 0x37),
@@ -687,61 +213,22 @@ static struct i2c_board_info imx119_i2c2_boardinfo[] = {
 };
 #endif
 
-static int x3_cam_init(void)
+static void x3_cam_init(void)
 {
 	int ret;
 	int i;
 
 	pr_info("%s:++\n", __func__);
 
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
-	memset(ent_vicsi_pwr, 0, sizeof(ent_vicsi_pwr));
-	for (i = 0; i < ARRAY_SIZE(x3_cam_gpio_data); i++) {
-		ret = gpio_request(x3_cam_gpio_data[i].gpio,
-				x3_cam_gpio_data[i].label);
-		if (ret < 0) {
-			pr_err("%s: gpio_request failed for gpio #%d\n",
-					__func__, i);
-			goto fail_free_gpio;
-		}
-		gpio_direction_output(x3_cam_gpio_data[i].gpio,
-				x3_cam_gpio_data[i].value);
-		gpio_export(x3_cam_gpio_data[i].gpio, false);
-		tegra_gpio_enable(x3_cam_gpio_data[i].gpio);
-	}
-#endif
-
-#if defined(CONFIG_VIDEO_AR0832)
-	i2c_register_board_info(2, ar0832_i2c2_boardinfo,
-			ARRAY_SIZE(ar0832_i2c2_boardinfo));
-#endif
 #if defined(CONFIG_VIDEO_IMX111)
 	i2c_register_board_info(2, imx111_i2c2_boardinfo,
 			ARRAY_SIZE(imx111_i2c2_boardinfo));
-#endif
-
-#if defined(CONFIG_VIDEO_MT9M114)
-	i2c_register_board_info(2, mt9m114_i2c2_boardinfo,
-			ARRAY_SIZE(mt9m114_i2c2_boardinfo));
 #endif
 
 #if defined(CONFIG_VIDEO_IMX119)
 	i2c_register_board_info(2, imx119_i2c2_boardinfo,
 			ARRAY_SIZE(imx119_i2c2_boardinfo));
 #endif
-
-	return 0;
-
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
-fail_free_gpio:
-	pr_err("%s x3_cam_init failed!\n", __func__);
-#endif
-
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
-	while (i--)
-		gpio_free(x3_cam_gpio_data[i].gpio);
-#endif  
-	return ret;
 }
 
 #ifdef CONFIG_SENSORS_INA230
@@ -769,7 +256,6 @@ static int __init x3_ina230_init(void)
 
 int __init x3_sensors_init(void)
 {
-	int ret;
 #ifdef CONFIG_SENSORS_ISL29028	
 	x3_isl_init();
 #endif
@@ -777,8 +263,7 @@ int __init x3_sensors_init(void)
 #ifdef CONFIG_SENSORS_INA230
 	x3_ina230_init();
 #endif
-	ret = x3_cam_init();
+	x3_cam_init();
 
-	return ret;
+	return 0;
 }
-

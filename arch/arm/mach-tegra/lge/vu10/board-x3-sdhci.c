@@ -32,11 +32,9 @@
 #include <mach-tegra/gpio-names.h>
 #include <mach-tegra/board.h>
 #include <lge/board-x3.h>
-#include "../../../include/asm/hw_irq.h" //                                                   
+#include "../../../include/asm/hw_irq.h"
 
-//                                                         
 #define X3_WLAN_RST	TEGRA_GPIO_PV3
-//                                                       
 #define X3_WLAN_WOW	TEGRA_GPIO_PU6
 #define X3_SD_CD TEGRA_GPIO_PW5
 #define X3_SD_WP TEGRA_GPIO_PT3
@@ -45,7 +43,6 @@ static void (*wifi_status_cb)(int card_present, void *dev_id);
 static void *wifi_status_cb_devid;
 static int x3_wifi_status_register(void (*callback)(int , void *), void *);
 
-//                                                         
 static int x3_wifi_reset(int on);
 static int x3_wifi_power(int on);
 static int x3_wifi_set_carddetect(int val);
@@ -61,7 +58,6 @@ static struct resource wifi_resource[] = {
 		.name	= "bcmdhd_wlan_irq",
 		.start	= TEGRA_GPIO_TO_IRQ(X3_WLAN_WOW),
 		.end	= TEGRA_GPIO_TO_IRQ(X3_WLAN_WOW),
-//for HW_OOB		.flags	= IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHEDGE | IORESOURCE_IRQ_SHAREABLE,
 		.flags	= IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL | IORESOURCE_IRQ_SHAREABLE,
 	},
 };
@@ -75,7 +71,6 @@ static struct platform_device x3_wifi_device = {
 		.platform_data = &x3_wifi_control,
 	},
 };
-//                                                       
 
 static struct resource sdhci_resource0[] = {
 	[0] = {
@@ -128,11 +123,11 @@ static struct embedded_sdio_data embedded_sdio_data0 = {
 	},
 	.cis  = {
 		.vendor         = 0x02d0,
-		.device         = 0x4330,	//                                                 
+		.device         = 0x4330,
 	},
 };
 #endif
-//#define NVIDIA_RECOMMAND
+
 static struct tegra_sdhci_platform_data tegra_sdhci_platform_data0 = {
 	.mmc_data = {
 		.register_status_notify	= x3_wifi_status_register,
@@ -217,7 +212,6 @@ static int x3_wifi_status_register(
 	return 0;
 }
 
-//                                                         
 static int x3_wifi_set_carddetect(int val)
 {
 	pr_debug("%s: %d\n", __func__, val);
@@ -234,33 +228,10 @@ static int x3_wifi_power(int on)
 
 	pr_debug("%s: %d\n", __func__, on);
 
-#if 0 /* does not use dpd for sdmmc */
-	/*
-	 * FIXME : we need to revisit IO DPD code
-	 * on how should multiple pins under DPD get controlled
-	 *
-	 * enterprise GPIO WLAN enable is part of SDMMC1 pin group
-	 */
-	sd_dpd = tegra_io_dpd_get(&tegra_sdhci_device0.dev);
-	if (sd_dpd) {
-		mutex_lock(&sd_dpd->delay_lock);
-		tegra_io_dpd_disable(sd_dpd);
-		mutex_unlock(&sd_dpd->delay_lock);
-	}
-#endif
-
 //	gpio_set_value(X3_WLAN_PWR, on);
 //	mdelay(100);
 	gpio_set_value(X3_WLAN_RST, on);
 	mdelay(200);
-
-#if 0 /* does not use dpd for sdmmc */
-	if (sd_dpd) {
-		mutex_lock(&sd_dpd->delay_lock);
-		tegra_io_dpd_enable(sd_dpd);
-		mutex_unlock(&sd_dpd->delay_lock);
-	}
-#endif
 
 	return 0;
 }
@@ -270,7 +241,6 @@ static int x3_wifi_reset(int on)
 	pr_debug("%s: do nothing\n", __func__);
 	return 0;
 }
-//                                                       
 
 #ifdef CONFIG_TEGRA_PREPOWER_WIFI
 static int __init enterprise_wifi_prepower(void)
@@ -337,16 +307,17 @@ int __init x3_sdhci_init(void)
 {
 	platform_device_register(&tegra_sdhci_device3);
 	platform_device_register(&tegra_sdhci_device0);
-	x3_wifi_init();	
+	x3_wifi_init();
+
 	//                                                        
 	//                                                         
-//PTEST	tegra_sdhci_platform_data0.cd_gpio = X3_WLAN_RST;
-//			tegra_sdhci_platform_data0.cd_gpio_polarity = 1;
+	//PTEST	tegra_sdhci_platform_data0.cd_gpio = X3_WLAN_RST;
+	//			tegra_sdhci_platform_data0.cd_gpio_polarity = 1;
 	//                                                       
 	//                                                      
-	tegra_gpio_enable(X3_SD_CD);
-	tegra_sdhci_platform_data2.cd_gpio = X3_SD_CD;
-	platform_device_register(&tegra_sdhci_device2);
+//	tegra_gpio_enable(X3_SD_CD);
+//	tegra_sdhci_platform_data2.cd_gpio = X3_SD_CD;
+//	platform_device_register(&tegra_sdhci_device2);
 
 	return 0;
 }
