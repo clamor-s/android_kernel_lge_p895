@@ -78,10 +78,10 @@ static int x3_wakeup_key(void)
 }
 
 static struct gpio_keys_button x3_keys[] = {
-	[0] = GPIO_KEY(KEY_VOLUMEUP, PI6, 0),
-	[1] = GPIO_KEY(KEY_VOLUMEDOWN, PO4, 1),
+	[0] = GPIO_KEY(KEY_UP, PI6, 0),
+	[1] = GPIO_KEY(KEY_DOWN, PO4, 1),
 	[2] = GPIO_KEY(KEY_POWER, PC7, 1),
-	[3] = GPIO_KEY(KEY_HP, PB6 , 1),
+	[3] = GPIO_KEY(KEY_ENTER, PB6 , 1),
 };
 
 static struct gpio_keys_platform_data x3_keys_platform_data = {
