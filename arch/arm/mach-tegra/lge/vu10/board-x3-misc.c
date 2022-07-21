@@ -33,12 +33,11 @@
 
 #if defined(CONFIG_MAX14526_MUIC)
 #include <linux/max14526.h>
-#endif // CONFIG_MAX14526_MUIC
+#endif
 
 #include <linux/video/backlight/lm3533_bl.h>
 
 #if defined(CONFIG_MAX8971_CHARGER)
-//                                          
 #include <linux/power/max8971-charger.h>
 #endif
 
@@ -46,7 +45,6 @@
 #include <linux/max17040_battery.h>
 #endif
 
-/*                                                                        */
 #if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720) 
 #include <linux/regulator/lp8720.h>
 static struct lp8720_platform_data lp8720_pdata = {
@@ -54,17 +52,9 @@ static struct lp8720_platform_data lp8720_pdata = {
 };
 #endif
 
-#if 0 //                                                       
-#include <media/lm3559_flash_led.h>
-static struct lm3559_flash_led_platform_data flash_led_data = {
-	.gpio_hwen = TEGRA_GPIO_PBB3,
-};
-#endif
-
-#if defined(CONFIG_ADC_TSC2007)  //                              
+#if defined(CONFIG_ADC_TSC2007)
 #include <linux/tsc2007_adc.h>
 #endif
-
 
 #define CABC_ENABLE
 
@@ -78,8 +68,6 @@ struct lge_backlight_platform_data {
 	int version;		/* Chip version number */	
 	int max_brightness;
 };
-
-//                                             
 
 struct lm3533_bl_platform_data lm3533_pdata = {
 	.hwen_gpio		= TEGRA_GPIO_PN6,
@@ -98,11 +86,7 @@ struct lm3533_bl_platform_data lm3533_pdata = {
 */
 };
 
-
-
 #if defined(CONFIG_MAX8971_CHARGER)
-//                                          
-
 #define MAX8971_IRQB_GPIO	TEGRA_GPIO_PJ2
 
 static void max8971_init_gpio(void)
@@ -130,11 +114,7 @@ static void max8971_init_gpio(void)
 }
 
 struct max8971_platform_data max8971_data = {
-/*                                                                                              */
-#if defined(CONFIG_MACH_VU10)
-//                                                                          
 	.chgcc_400	= 0x08,		// 400mA
-//                                                                          
 	.chgcc_usb500	= 0x0A,		// Fast Charge Current: 500mA
 	.chgcc_ta	= 0x12,		// Fast Charge Current: 900mA
 	.chgcc_factory 	= 0x1F, 	// Fast Charge Current: 1550mA
@@ -163,46 +143,8 @@ struct max8971_platform_data max8971_data = {
 	.suspend_usb	= 0x0,		//USB suspend //disable
 	.irqb_pgio	= TEGRA_GPIO_TO_IRQ(MAX8971_IRQB_GPIO),
 	.gpio_init	= max8971_init_gpio,
-#else
-	.chgcc_usb500	= 0x0A,		// Fast Charge Current	// USB charging current 500mA
-	.chgcc_ta	= 0x12,//0x18,		// Fast Charge Current	// TA charging current 1200mA
-	.chgcc_factory 	= 0x1F, 	// Fast Charge Current	// TA charging current 1550mA
-	.chgcc_mhl400	= 0x08, 	//                                                                                                            
-	.chgcc_soc700	= 0x0E,	//Charging 700mA During  10% Under SOC Contions
-	
-	.fchgtime	= 0x00,		// Fast Charge Time			//5hrs	
-	.chgrstrt	= 0x00,		// Fast Charge Restart Threshold			//150mV
-	
-	.dcilmt_usb500	= 0x14,//0x14,		// Input Current Limit Selection	//500mA
-	//.dcilmt_ta	= 0x28,//0x30,		// Input Current Limit Selection		//1200mA
-	.dcilmt_ta		= 0x30,//0x30,//0x30,		// Input Current Limit Selection		//1200mA
-	.dcilmt_factory = 0x3F,		// Input Current Limit Selection		//1550mA
-	.dcilmt_mhl400	= 0x14,//                                                                                                         
-	.dcilmt_soc700	= 0x1D,	//Charging 700mA During  10% Under SOC Contions
-	
-	.topofftime	= 0x00,		// Top Off Timer Setting				//30min
-	.topofftshld	= 0x03,		// Top Off Threshold					//200mA
-	.chgcv		= 0x02,		// Charger Termination Voltage : 		//4.35V
-	.ifst2p8_usb500	= 0x00,		//Scales Maximum Fast Charge Current to 2.8A.	//disable
-	.ifst2p8_ta	= 0x00,		//Scales Maximum Fast Charge Current to 2.8A.	//disable
-	.ifst2p8_factory= 0x01,		//Scales Maximum Fast Charge Current to 2.8A.	//disable
-	.ifst2p8_mhl400	= 0x00,		//                                                                                                               
-
-	.regtemp	= 0x03,		// Die temperature thermal regulation loop setpoint		//disable temp condition
-	.thm_config	= 0x01,		// Thermal monitor configuration				//disable
-	.safetyreg	= 0x00,		// JEITA Safety region selection
-	
-	.int_mask	= 0xFE,		// CHGINT_MASK
-	.chg_proctection= 0x3, //Charging protection 	//	unlock
-	.m_input_vol	= 0x1, 	//Moniotor input voltage //
-	.suspend_usb	= 0x0,	//USB suspend //disable
-	.irqb_pgio	= TEGRA_GPIO_TO_IRQ(MAX8971_IRQB_GPIO),	
-	.gpio_init	= max8971_init_gpio,
-#endif /* CONFIG_MACH_VU10 */
-/*                                                                                              */	
 };
 #endif /*CONFIG_MAX8971_CHARGER*/
-
 
 #if defined(CONFIG_MAX14526_MUIC)
 //#define MUIC_GPIO	TEGRA_GPIO_PX6
@@ -275,7 +217,6 @@ struct max14526_platform_data max14526_pdata = {
 };
 #endif	// CONFIG_MAX14526_MUIC
 
-
 #if defined(CONFIG_TSPDRV)
 struct tspdrv_i2c_platform_data tspdrv_i2c_pdata = {
 	.en_gpio		= TEGRA_GPIO_PH1,
@@ -287,4 +228,3 @@ struct tspdrv_i2c_platform_data tspdrv_i2c_pdata = {
 	.duty_ns		= 1250,	
 };
 #endif
-
