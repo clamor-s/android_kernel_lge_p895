@@ -39,43 +39,10 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 
-/*                               
-                                                                                 
-                                       
-                                   
-                                 
- 
-
-                     
-                     
-                       
-                       
-
-                               */
-
-/*                                                    
-                                     
-
-                                                     */
-
 struct gps_gpio_platform_data gps_pdata = {
 	.pwron  = TEGRA_GPIO_PR6,
-//                                              
-#ifdef CONFIG_MACH_VU10
 	.reset_n = TEGRA_GPIO_PK5,
-#else
-	.reset_n = TEGRA_GPIO_PR7,
-#endif
-//                                              
-
-//                                               
 	.eclk = TEGRA_GPIO_PH0,
-//                                                
-	/*
-	#if defined(CONFIG_P940_GPS_LNA_SD_USE)
-	  .lna_sd  = GPS_LNA_SD_GPIO,
-	#endif
-	*/
 };
 
 struct platform_device gps_gpio =
@@ -89,13 +56,9 @@ struct platform_device gps_gpio =
 
 void x3_gps_init(void)
 {
-
-	//tegra_gpio_enable(TEGRA_GPIO_PU2);
-	//tegra_gpio_enable(TEGRA_GPIO_PU3);
 	platform_device_register(&gps_gpio);
 }
 
-//                                                 
 static ssize_t gps_gpio_reset_show(struct device *dev, 
 		struct device_attribute *attr, char *buf)
 {
@@ -157,14 +120,9 @@ static ssize_t gps_gpio_poweron_store(struct device *dev,
 
 	pr_info("%s(gpio_set_value) %d %d\n", __func__,pdata->pwron,value);
 
-
-#if defined(CONFIG_P940_GPS_LNA_SD_USE)
-	gpio_set_value(pdata->lna_sd, value);
-#endif
-
 	return size;
 }
-//                                                
+
 static ssize_t gps_gpio_eclk_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -196,22 +154,15 @@ static ssize_t gps_gpio_eclk_store(struct device *dev,
 	
 	return size;
 }	
-//                                                
-
 static DEVICE_ATTR(reset, S_IRUGO | S_IWUSR, gps_gpio_reset_show, gps_gpio_reset_store);
 static DEVICE_ATTR(poweron, S_IRUGO | S_IWUSR, gps_gpio_poweron_show, gps_gpio_poweron_store);
-
-//                                                
-
 static DEVICE_ATTR(eclk, S_IRUGO | S_IWUSR, gps_gpio_eclk_show, gps_gpio_eclk_store);
-//                                                
 
 static int __devinit gps_gpio_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct gps_gpio_platform_data *pdata = pdev->dev.platform_data;
-//	unsigned pwron, reset_n;
-	unsigned pwron, reset_n, eclk;   //                                                     
+	unsigned pwron, reset_n, eclk;
 
 	pr_info("%s\n", __func__);
 
@@ -235,7 +186,7 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	gpio_direction_output(pdata->reset_n, 0);
 	
 	tegra_gpio_enable(pdata->reset_n);
-//                                                
+
 	ret = gpio_request(pdata->eclk, "GPS_REF_EN GPIO");
 	if (ret) {
 		pr_err("%s: failed to request GPIO_%d\n", __func__, pdata->eclk);
@@ -244,20 +195,7 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	gpio_direction_output(pdata->eclk, 0);
 	
 	tegra_gpio_enable(pdata->eclk);
-//                                                
 
-#if defined(CONFIG_P940_GPS_LNA_SD_USE)
-	ret = gpio_request(pdata->lna_sd, "GPS extend LNA GPIO");
-	if (ret) {
-		pr_err("%s: failed to request GPIO_%d\n", __func__, pdata->lna_sd);
-		goto err_gpio_lns_sd_req;
-	}
-	gpio_direction_output(pdata->lna_sd, 0);
-
-	tegra_gpio_enable(pdata->lna_sd);	
-#endif
-//                                                               
-#if 1
 	ret = gpio_request(TEGRA_GPIO_PY1, "GPS_LDO_EN");
 	if (ret) {
 		pr_err("%s: failed to request GPIO_%d\n", __func__, TEGRA_GPIO_PY1);
@@ -266,8 +204,6 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 	gpio_direction_output(TEGRA_GPIO_PY1, 1);
 
 	tegra_gpio_enable(TEGRA_GPIO_PY1);	
-#endif
-//                                                               
 
 	ret = device_create_file(&pdev->dev, &dev_attr_reset);
 	if (ret) {
@@ -282,34 +218,26 @@ static int __devinit gps_gpio_probe(struct platform_device *pdev)
 				__func__);
 		goto err_pwron_attr_create;
 	}
-//                                                
+
 	ret = device_create_file(&pdev->dev, &dev_attr_eclk);
 	if (ret) {
 		pr_err("%s: failed to create \"dev_attr_eclk\" attribute!\n",
 				__func__);
 		goto err_eclk_attr_create;
 	}
-//                                                
 
 	return 0;
 
 err_pwron_attr_create:
 	device_remove_file(&pdev->dev, &dev_attr_reset);
 err_reset_attr_create:
-#if defined(CONFIG_P940_GPS_LNA_SD_USE)
-	gpio_free(pdata->lna_sd);
-err_gpio_lns_sd_req:
-#endif
 	gpio_free(pdata->reset_n);
 err_gpio_reset_req:
 	gpio_free(pdata->pwron);
-//                                                
 err_gpio_eclk_req:
 	gpio_free(pdata->eclk);
 err_eclk_attr_create:
 	device_remove_file(&pdev->dev, &dev_attr_eclk);
-
-//                                                
 err_gpio_pwron_req:
 	return ret;
 }
@@ -320,9 +248,8 @@ static int __devexit gps_gpio_remove(struct platform_device *pdev)
 	pr_info("%s\n", __func__);
 	device_remove_file(&pdev->dev, &dev_attr_reset);
 	device_remove_file(&pdev->dev, &dev_attr_poweron);
-//                                                
 	device_remove_file(&pdev->dev, &dev_attr_eclk);
-//                                                
+
 	return 0;
 }
 

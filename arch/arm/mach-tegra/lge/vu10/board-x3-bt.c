@@ -46,7 +46,6 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 
-//                                                 
 #ifdef CONFIG_BCM4330_RFKILL
 #include <linux/lbee9qmb-rfkill.h>
 
@@ -66,6 +65,7 @@ static struct lbee9qmb_platform_data lbee9qmb_platform = {
 	.active_low = 0, /* 0: active high, 1: active low */
 	.delay = 100,
 };
+
 static struct platform_device lbee9qmb_device = {
     .name = "lbee9qmb-rfkill",
     .dev = {
@@ -78,6 +78,7 @@ void x3_bt_rfkill(void)
     tegra_gpio_enable(GPIO_BT_RESET);
     printk(KERN_DEBUG "%s : tegra_gpio_enable(reset) [%d]", __func__, GPIO_BT_RESET);
     tegra_gpio_enable(GPIO_BT_WAKE);
+
     printk(KERN_DEBUG "%s : tegra_gpio_enable(btwake) [%d]", __func__, GPIO_BT_WAKE);
     tegra_gpio_enable(GPIO_BT_HOSTWAKE);
     printk(KERN_DEBUG "%s : tegra_gpio_enable(hostwake) [%d]", __func__, GPIO_BT_HOSTWAKE);
@@ -90,7 +91,6 @@ void x3_bt_rfkill(void)
     return;
 }
 #endif /* CONFIG_BCM4330_RFKILL */
-//                                                 
 
 void __init x3_setup_bluesleep(void)
 {
