@@ -86,6 +86,18 @@
 #define SSD2825_CABC_BRIGHTNESS_STATUS_REG	0xEB
 #define SSD2825_READ_REG			0xFF
 
+#define SSD2825_CONF_REG_HS	BIT(0)	// 0 - LP mode; 1 - HS mode
+#define SSD2825_CONF_REG_CKE	BIT(1)	// 0 - Clock lane can enter LP; 1 - Clock lane will enter HS
+#define SSD2825_CONF_REG_SLP	BIT(2)	// Sleep mode switch
+#define SSD2825_CONF_REG_VEN	BIT(3)	// Video mode switch
+#define SSD2825_CONF_REG_HCLK	BIT(4)	// HS clock switch
+#define SSD2825_CONF_REG_CSS	BIT(5)	// 0 - The clock source is tx_clk; 1 - The clock source is pclk
+#define SSD2825_CONF_REG_DCS	BIT(6)	// 0 - Generic packet in use; 1 - DCS packet in use
+#define SSD2825_CONF_REG_REN	BIT(7)	// 0 - Write operation; 1 - Read operation
+#define SSD2825_CONF_REG_ECD	BIT(8)	// ECC CRC Check switch
+#define SSD2825_CONF_REG_EOT	BIT(9)	// EOT Packet send switch
+#define SSD2825_CONF_REG_LPE	BIT(10)	// Long Packet enable switch
+
 struct bridge_platform_data{
 	u16 lcd_en;
 #if defined(CONFIG_MACH_VU10)
