@@ -28,30 +28,17 @@
 #define HITACHI_GAMMA_S_CURVE
 #define GAMMA_3
 
-/*
- * ----------------------------------------
- *	DEFINITION FOR 5 INCH DISPLAY
- * ----------------------------------------
+/* 
+ * DEFINITION FOR 5 INCH DISPLAY 
+ * 
+ * HITACHI/KOE 5" 768x1024 TX13D100VM0EAA MIPI DSI panel
  */
 #define HITACHI_INVERSION_SELECT
 //#define HITACHI_POWER_SETTING
 #define COLUMN_INVERSION
 #define HITACHI_DIGITAL_CONTRAST_ADJ
 
-// VIEW5_MANUFACTURE_COMMAND_ACCESS
-// enable : before specific setting
-//#define VIEW5_MANUFACTURE_COMMAND_ACCESS
-
-// VIEW5_CABC_ON
-// enable : CABC ON
-//#define VIEW5_CABC_ON
-
 #include "ssd2825_bridge.h"
-
-struct spi_cmd_data16 {
-	unsigned short delay;
-	unsigned short value;
-};
 
 struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		SSD2825_RGB_INTERFACE_CTRL_REG_1, 0x0105, 0x0102, // h_sync_width = 5; v_sync_width = 2
@@ -89,33 +76,30 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		SSD2825_CONFIGURATION_REG, 0x0142, 0x0103,
 		SSD2825_VC_CTRL_REG, 0x0100, 0x0100,
 
-		/* exit_sleep_mode */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0111, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0111, 0x0100, // MIPI_DCS_EXIT_SLEEP_MODE
 
 		// set mdelay(80);
 
-		/* set_address_mode */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0136, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0136, 0x0100, // MIPI_DCS_SET_ADDRESS_MODE
 
 		// set mdelay(20);
 
-		/* set_pixel_format */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x013A, 0x0170,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x013A, 0x0170, // 0x70?; 0x3A = MIPI_DCS_SET_PIXEL_FORMAT
 
 		SSD2825_CONFIGURATION_REG, 0x0102, 0x0103,
 		SSD2825_VC_CTRL_REG, 0x0100, 0x0100,
 
 		/* Manufacturer Command Access Protect Off */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0104,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,  // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0104, // MIPI_DCS_GET_DISPLAY_ID; 0xB0 ?
 
 #if defined(HITACHI_DIGITAL_CONTRAST_ADJ)
 		//Digital Contrast Adjustment
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0104, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01CC, 0x01DC, 0x01B4, 0x01FF,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0104, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01CC, 0x01DC, 0x01B4, 0x01FF, // cmd not in MIPI DCS
 #endif
 
 #ifdef HITACHI_GAMMA_S_CURVE
@@ -124,7 +108,7 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 
 #if defined(HITACHI_INVERSION_SELECT)
 		//Panel Driving Setting
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0109, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0109, 0x0100, // Send DSI commands into buffer
 		SSD2825_PACKET_DROP_REG,
 #if defined(COLUMN_INVERSION)
 		0x01C1, 0x0100, 0x0150, //Column
@@ -139,7 +123,7 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 
 #if defined(HITACHI_POWER_SETTING)
 		//Panel Driving Setting
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0109, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0109, 0x0100, // Send DSI commands into buffer
 		SSD2825_PACKET_DROP_REG,
 #if defined(COLUMN_INVERSION)
 		0x01D1, 0x018E, 0x0127, //Column
@@ -152,15 +136,14 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 #endif
 #endif
 		/* Manufacturer Command Access Protect On */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0103,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0103, // 0x03 = MIPI_DCS_GET_COMPRESSION_MODE; 0xBO ?
 
 		SSD2825_CONFIGURATION_REG, 0x0142, 0x0103,
 		SSD2825_VC_CTRL_REG, 0x0100, 0x0100,
 
-		/* Display on */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0129, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0129, 0x0100, // MIPI_DCS_SET_DISPLAY_ON
 
 		// set mdelay(10);
 
@@ -171,9 +154,10 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 
 static struct spi_cmd_data16 solomon_power_off_set[] = {
 		SSD2825_CONFIGURATION_REG, 0x0149, 0x0103,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100, //set_display_off
-		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100, //enter_sleep_mode
+
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100, // MIPI_DCS_SET_DISPLAY_OFF
+		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100, // MIPI_DCS_ENTER_SLEEP_MODE
 		
 		// set mdelay(100); 
 		
@@ -185,36 +169,25 @@ struct spi_cmd_data16 solomon_reg_read_set[] = {
 		// SW reset
 		SSD2825_OPERATION_CTRL_REG, 0x0100, 0x0101,
 
-		// Horizontal and Vertical Pulse Width
-		SSD2825_RGB_INTERFACE_CTRL_REG_1, 0x0105, 0x0102,
-
-		// HBP + width(Because of the Non-burst mode)
-		// VBP + width(Because of the Non-burst mode)
-		SSD2825_RGB_INTERFACE_CTRL_REG_2, 0x0156, 0x010A,	
-
-		SSD2825_RGB_INTERFACE_CTRL_REG_3, 0x0174, 0x0118,	// HFP + VFP
-
-		// 0xB4 : 0x0300 : 768	// 0xB5 : 0x0400 : 1024
-		SSD2825_RGB_INTERFACE_CTRL_REG_4, 0x0100, 0x0103,
-		SSD2825_RGB_INTERFACE_CTRL_REG_5, 0x0100, 0x0104,
-
+		SSD2825_RGB_INTERFACE_CTRL_REG_1, 0x0105, 0x0102, // h_sync_width = 5; v_sync_width = 2
+		SSD2825_RGB_INTERFACE_CTRL_REG_2, 0x0156, 0x010A, // h_back_porch + h_sync_width = 0x56(86); v_back_porch + v_sync_width = 0xA(10) (Because of the Non-burst mode)
+		SSD2825_RGB_INTERFACE_CTRL_REG_3, 0x0174, 0x0118, // h_front_porch = 0x74(116); v_front_porch = 0x18(24)
+		SSD2825_RGB_INTERFACE_CTRL_REG_4, 0x0100, 0x0103, // 0x0300 = h_active = 768
+		SSD2825_RGB_INTERFACE_CTRL_REG_5, 0x0100, 0x0104, // 0x0400 = v_active = 1024
 #ifdef MIPI_NON_BURST_MODE
-		// default Non-burst mode
+		// video pixel format 24bpp; Non burst mode with sync events
 		SSD2825_RGB_INTERFACE_CTRL_REG_6, 0x0107, 0x0100,
 #else
-		// burst mode for power consumption:0x010B,
+		// video pixel format 24bpp; Burst mode
 		SSD2825_RGB_INTERFACE_CTRL_REG_6, 0x010B, 0x0100,
 #endif
-
-		SSD2825_LANE_CONFIGURATION_REG, 0x0103, 0x0100,
-		SSD2825_TEST_REG, 0x0104, 0x0100,
-
+		SSD2825_LANE_CONFIGURATION_REG, 0x0103, 0x0100, // 4 lane mode (DSI_0)
+		SSD2825_TEST_REG, 0x0104, 0x0100, // Entry point for the internal buffer used to read the data returned by the MIPI slave.
 #ifdef CURRENT_BIAS_MIPI_OUTPUT
-		SSD2825_ANALOG_CTRL_REG_1, 0x011C, 0x0102,
+		SSD2825_ANALOG_CTRL_REG_1, 0x011C, 0x0102, // MIPI Control the analog Phy input.
 #endif
-
-		SSD2825_PLL_CTRL_REG, 0x0100, 0x0100,
-		SSD2825_LINE_CTRL_REG, 0x0101, 0x0100,
+		SSD2825_PLL_CTRL_REG, 0x0100, 0x0100, // PLL power down (bit0); SYS_clk Divider = 1
+		SSD2825_LINE_CTRL_REG, 0x0101, 0x0100, // Automatically perform BTA after the next write packet.
 		SSD2825_DELAY_ADJ_REG_1, 0x0103, 0x0121,
 
 		// 430Mbps
@@ -329,14 +302,12 @@ struct spi_cmd_data16 solomon_reg_read_set4[] = {
 		/* Solomon_enter_sleep_sequence */
 		SSD2825_CONFIGURATION_REG, 0x014B, 0x0103,
 		SSD2825_VC_CTRL_REG, 0x0100, 0x0100,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100,
 
-		/* Display off */
-		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100, // MIPI_DCS_SET_DISPLAY_OFF
 
-		/* enter_sleep_mode */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100, // MIPI_DCS_ENTER_SLEEP_MODE
 
 		// set mdelay(500);
 
@@ -347,9 +318,8 @@ struct spi_cmd_data16 solomon_reg_read_set4[] = {
 		SSD2825_CONFIGURATION_REG, 0x01C2, 0x0103,
 
 		/*********/
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x010C, 0x0100,
-
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x010C, 0x0100, // MIPI_DCS_GET_PIXEL_FORMAT
 		SSD2825_SPI_READ_REG, 0x01FA, 0x0100,
 		SSD2825_RETURN_DATA_COUNT_REG,
 };
@@ -359,14 +329,12 @@ struct spi_cmd_data16 solomon_reg_read_set5[] = {
 		/* Solomon_enter_sleep_sequence */
 		SSD2825_CONFIGURATION_REG, 0x014B, 0x0103,
 		SSD2825_VC_CTRL_REG, 0x0100, 0x0100,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100,
 
-		/* Display off */
-		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100, // MIPI_DCS_SET_DISPLAY_OFF
 
-		/* enter_sleep_mode */
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100, // MIPI_DCS_ENTER_SLEEP_MODE
 
 		// set mdelay(500);
 
@@ -375,9 +343,8 @@ struct spi_cmd_data16 solomon_reg_read_set5[] = {
 		SSD2825_CONFIGURATION_REG, 0x01C3, 0x0103,
 
 		/*********/
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x010A, 0x0100,
-
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x010A, 0x0100, // MIPI_DCS_GET_POWER_MODE
 		SSD2825_SPI_READ_REG, 0x01FA, 0x0100,
 		SSD2825_RETURN_DATA_COUNT_REG,
 };
@@ -387,28 +354,27 @@ struct spi_cmd_data16 solomon_reg_read_set6[] = {
 		/* Solomon_enter_sleep_sequence */
 		SSD2825_CONFIGURATION_REG, 0x014B, 0x0103,
 		SSD2825_VC_CTRL_REG, 0x0100, 0x0100,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100,
 
-		/*Display off*/
-		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100, // MIPI_DCS_SET_DISPLAY_OFF
 
-		/*enter_sleep_mode*/
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100, // MIPI_DCS_ENTER_SLEEP_MODE
 
 		// set mdelay(500);
 
 		SSD2825_CONFIGURATION_REG, 0x0102, 0x0103,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0104,
+
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0104, // MIPI_DCS_GET_DISPLAY_ID; 0xB0 ?
 
 		SSD2825_LINE_CTRL_REG, 0x0101, 0x0100,
 		SSD2825_MAX_RETURN_SIZE_REG, 0x0120, 0x0100,
 		SSD2825_CONFIGURATION_REG, 0x0182, 0x0103,
-		/*********/
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01BF, 0x0100,
 
+		/*********/
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01BF, 0x0100, // 0xBF ?
 		SSD2825_SPI_READ_REG, 0x01FA, 0x0100,
 		SSD2825_RETURN_DATA_COUNT_REG,
 };
@@ -418,28 +384,27 @@ struct spi_cmd_data16 solomon_reg_read_set7[] = {
 		/*Solomon_enter_sleep_sequence*/
 		SSD2825_CONFIGURATION_REG, 0x014B, 0x0103,
 		SSD2825_VC_CTRL_REG, 0x0100, 0x0100,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100,
 
-		/*Display off*/
-		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0100, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0128, 0x0100, // MIPI_DCS_SET_DISPLAY_OFF
 
-		/*enter_sleep_mode*/
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x0110, 0x0100, // MIPI_DCS_ENTER_SLEEP_MODE
 
 		// set mdelay(500);
 
 		SSD2825_CONFIGURATION_REG, 0x0102, 0x0103,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0104,
+
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0104, // MIPI_DCS_GET_DISPLAY_ID; 0xB0 ?
 
 		SSD2825_LINE_CTRL_REG, 0x0101, 0x0100,
 		SSD2825_MAX_RETURN_SIZE_REG, 0x0120, 0x0100,
 		SSD2825_CONFIGURATION_REG, 0x0183, 0x0103,
-		/*********/
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01BF, 0x0100,
 
+		/*********/
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01BF, 0x0100, // 0xBF ?
 		SSD2825_SPI_READ_REG, 0x01FA, 0x0100,
 		SSD2825_RETURN_DATA_COUNT_REG,
 };
@@ -451,8 +416,8 @@ struct spi_cmd_data16 solomon_reg_read_set8[] = {
 
 struct spi_cmd_data16 solomon_reg_read_set9[] = {
 		SSD2825_CONFIGURATION_REG, 0x0102, 0x0103,
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100,
-		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0103,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0102, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, 0x01B0, 0x0103, // MIPI_DCS_GET_COMPRESSION_MODE; 0xB0 ?
 };
 
 const char ssd2825_reg_set[] = {
@@ -475,9 +440,10 @@ const char ssd2825_reg_set[] = {
 struct spi_cmd_data16 solomon_reg_read_set4_1[] = {
 		SSD2825_MAX_RETURN_SIZE_REG, 0x010A, 0x0100,
 		SSD2825_CONFIGURATION_REG, 0x01C9, 0x0103,
+
 		/*********/
-		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100,
-		SSD2825_PACKET_DROP_REG,
+		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0101, 0x0100, // Send DSI commands into buffer
+		SSD2825_PACKET_DROP_REG, // nothing?
 };
 
 #if defined(HITACHI_GAMMA_S_CURVE)
