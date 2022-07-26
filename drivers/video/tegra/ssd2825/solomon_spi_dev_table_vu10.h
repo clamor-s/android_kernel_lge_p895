@@ -73,17 +73,7 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		// set mdelay(10);
 
 		// SSD2825_CONFIGURATION_REG: 0x0342 - 0000 0011 0100 0010
-		// bit0 - LP mode on;
-		// bit1 - Clock lane will enter HS mode for all the cases.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is disabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x0342,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_VC_CTRL_REG, 0x0000,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0002, // Send DSI commands into buffer
@@ -100,17 +90,7 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		SSD2825_PACKET_DROP_REG, 0x3A, 0x70, // 0x70?; 0x3A = MIPI_DCS_SET_PIXEL_FORMAT
 
 		// SSD2825_CONFIGURATION_REG: 0x0302 - 0000 0011 0000 0010
-		// bit0 - LP mode on;
-		// bit1 - Clock lane will enter HS mode for all the cases.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is disabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - Generic packet (The packet can be any one of Generic Long Write, Generic Short Write, Generic Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x0302,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_VC_CTRL_REG, 0x0000,
 
 		/* Manufacturer Command Access Protect Off */
@@ -161,17 +141,7 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		SSD2825_PACKET_DROP_REG, 0xB0, 0x03, // 0x03 = MIPI_DCS_GET_COMPRESSION_MODE; 0xBO ?
 
 		// SSD2825_CONFIGURATION_REG: 0x0342 - 0000 0011 0100 0010
-		// bit0 - LP mode on;
-		// bit1 - Clock lane will enter HS mode for all the cases.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is disabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x0342,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_VC_CTRL_REG, 0x00, 0x00,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0002, // Send DSI commands into buffer
@@ -183,32 +153,12 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		SSD2825_VC_CTRL_REG, 0x0000, 
 
 		// SSD2825_CONFIGURATION_REG: 0x0349 - 0000 0011 0100 1001
-		// bit0 - HS mode on;
-		// bit1 - Clock lane will enter LP mode, if it is not in reverse direction communication. Clock lane will follow the setting of HCLK, if it is in reverse direction communication.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is enabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x0349,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_VEN | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 };
 
 static struct spi_cmd_data16 solomon_power_off_set[] = {
 		// SSD2825_CONFIGURATION_REG: 0x0349 - 0000 0011 0100 1001
-		// bit0 - HS mode on;
-		// bit1 - Clock lane will enter LP mode, if it is not in reverse direction communication. Clock lane will follow the setting of HCLK, if it is in reverse direction communication.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is enabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x0349,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_VEN | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0002, // Send DSI commands into buffer
 		SSD2825_PACKET_DROP_REG, 0x28, 0x00, // MIPI_DCS_SET_DISPLAY_OFF
@@ -217,17 +167,7 @@ static struct spi_cmd_data16 solomon_power_off_set[] = {
 		// set mdelay(100);
 
 		// SSD2825_CONFIGURATION_REG: 0x0300 - 0000 0011 0000 0000
-		// bit0 - LP mode on;
-		// bit1 - Clock lane will enter LP mode, if it is not in reverse direction communication. Clock lane will follow the setting of HCLK, if it is in reverse direction communication.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is disabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - Generic packet (The packet can be any one of Generic Long Write, Generic Short Write, Generic Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x0300,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_PLL_CTRL_REG, 0x0000,
 };
 
@@ -249,17 +189,7 @@ struct spi_cmd_data16 solomon_reg_read_set3[] = {
 /* DCS packets in LP mode */
 struct spi_cmd_data16 solomon_reg_read_set4[] = {
 		// SSD2825_CONFIGURATION_REG: 0x034B - 0000 0011 0100 1011
-		// bit0 - HS mode on;
-		// bit1 - Clock lane will enter HS mode for all the cases.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is enabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x034B,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_VEN | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_VC_CTRL_REG, 0x0000,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0000, // Send DSI commands into buffer
@@ -274,17 +204,7 @@ struct spi_cmd_data16 solomon_reg_read_set4[] = {
 		SSD2825_MAX_RETURN_SIZE_REG, 0x0020, // Maximum Return Size 0x20 = 32
 
 		// SSD2825_CONFIGURATION_REG: 0x03C2 - 0000 0011 1100 0010
-		// bit0 - LP mode on;
-		// bit1 - Clock lane will enter HS mode for all the cases.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is disabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Read operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x03C2,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_REN | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 
 		/*********/
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0001, // Send DSI commands into buffer
@@ -296,17 +216,7 @@ struct spi_cmd_data16 solomon_reg_read_set4[] = {
 /* DCS packets in HS mode */
 struct spi_cmd_data16 solomon_reg_read_set5[] = {
 		// SSD2825_CONFIGURATION_REG: 0x034B - 0000 0011 0100 1011
-		// bit0 - HS mode on;
-		// bit1 - Clock lane will enter HS mode for all the cases.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is enabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Write operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x034B, 
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_VEN | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_VC_CTRL_REG, 0x0000,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0000, // Send DSI commands into buffer
@@ -321,17 +231,7 @@ struct spi_cmd_data16 solomon_reg_read_set5[] = {
 		SSD2825_MAX_RETURN_SIZE_REG, 0x0020, // Maximum Return Size 0x20 = 32
 
 		// SSD2825_CONFIGURATION_REG: 0x03C3 - 0000 0011 1100 0011
-		// bit0 - HS mode on;
-		// bit1 - Clock lane will enter HS mode for all the cases.
-		// bit2 - Sleep mode is disabled
-		// bit3 - Video mode is disabled
-		// bit4 - HS clock is enabled
-		// bit5 - The clock source is tx_clk
-		// bit6 - DCS packet (The packet can be any one of DCS Long Write, DCS Short Write, DCS Read packet, depending on the configuration.)
-		// bit7 - Read operation
-		// bit8 - ECC CRC Check Disable
-		// bit9 - EOT Packet Enable send
-		SSD2825_CONFIGURATION_REG, 0x03C3,
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_REN | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 
 		/*********/
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0001, // Send DSI commands into buffer
@@ -342,8 +242,8 @@ struct spi_cmd_data16 solomon_reg_read_set5[] = {
 
 /* Generic Packets in LP mode */
 struct spi_cmd_data16 solomon_reg_read_set6[] = {
-		/* Solomon_enter_sleep_sequence */
-		SSD2825_CONFIGURATION_REG, 0x034B,
+		// SSD2825_CONFIGURATION_REG: 0x034B - 0000 0011 0100 1011
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_VEN | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_VC_CTRL_REG, 0x0000, 
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0000, // Send DSI commands into buffer
@@ -354,14 +254,17 @@ struct spi_cmd_data16 solomon_reg_read_set6[] = {
 
 		// set mdelay(500);
 
-		SSD2825_CONFIGURATION_REG, 0x0302,
+		// SSD2825_CONFIGURATION_REG: 0x0302 - 0000 0011 0000 0010
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0002, // Send DSI commands into buffer
 		SSD2825_PACKET_DROP_REG, 0xB0, 0x04, // MIPI_DCS_GET_DISPLAY_ID; 0xB0 ?
 
 		SSD2825_LINE_CTRL_REG, 0x0001,
 		SSD2825_MAX_RETURN_SIZE_REG, 0x0020,
-		SSD2825_CONFIGURATION_REG, 0x0382,
+
+		// SSD2825_CONFIGURATION_REG: 0x0382 - 0000 0011 1000 0010
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_REN | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 
 		/*********/
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0001, // Send DSI commands into buffer
@@ -372,8 +275,8 @@ struct spi_cmd_data16 solomon_reg_read_set6[] = {
 
 /*Generic Packets in HS mode*/
 struct spi_cmd_data16 solomon_reg_read_set7[] = {
-		/*Solomon_enter_sleep_sequence*/
-		SSD2825_CONFIGURATION_REG, 0x034B,
+		// SSD2825_CONFIGURATION_REG: 0x034B - 0000 0011 0100 1011
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_VEN | SSD2825_CONF_REG_DCS | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_VC_CTRL_REG, 0x0000,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0000, // Send DSI commands into buffer
@@ -384,14 +287,17 @@ struct spi_cmd_data16 solomon_reg_read_set7[] = {
 
 		// set mdelay(500);
 
-		SSD2825_CONFIGURATION_REG, 0x0302,
+		// SSD2825_CONFIGURATION_REG: 0x0302 - 0000 0011 0000 0010
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0002, // Send DSI commands into buffer
 		SSD2825_PACKET_DROP_REG, 0xB0, 0x04, // MIPI_DCS_GET_DISPLAY_ID; 0xB0 ?
 
 		SSD2825_LINE_CTRL_REG, 0x0001,
 		SSD2825_MAX_RETURN_SIZE_REG, 0x0020,
-		SSD2825_CONFIGURATION_REG, 0x0383,
+
+		// SSD2825_CONFIGURATION_REG: 0x0383 - 0000 0011 1000 0011
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_HS | SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_REN | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 
 		/*********/
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0001, // Send DSI commands into buffer
@@ -406,7 +312,8 @@ struct spi_cmd_data16 solomon_reg_read_set8[] = {
 };
 
 struct spi_cmd_data16 solomon_reg_read_set9[] = {
-		SSD2825_CONFIGURATION_REG, 0x0302,
+		// SSD2825_CONFIGURATION_REG: 0x0302 - 0000 0011 0000 0010
+		SSD2825_CONFIGURATION_REG, SSD2825_CONF_REG_CKE | SSD2825_CONF_REG_ECD | SSD2825_CONF_REG_EOT,
 		SSD2825_PACKET_SIZE_CTRL_REG_1, 0x0002, // Send DSI commands into buffer
 		SSD2825_PACKET_DROP_REG, 0xB0, 0x03, // MIPI_DCS_GET_COMPRESSION_MODE; 0xB0 ?
 };
