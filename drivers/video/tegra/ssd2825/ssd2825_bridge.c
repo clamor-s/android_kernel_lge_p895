@@ -376,59 +376,62 @@ int ssd2825_bridge_enable(void)
 	int cnt, ret;
 	spi_data *sequence;
 	int total_cnt =0;
+
 	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
+
+	if (x3_bridge_on)
+		return 0;
+
 	mutex_lock(&bridge_init_mutex);
-	 if(!x3_bridge_on){
-		ssd2825_bridge_enable_spi_pins_to_nomal();
+
+	/* Bridge pre enable */
+	ssd2825_bridge_enable_spi_pins_to_nomal();
 #if defined(CONFIG_SPI_SOLOMON_BRIDGE)
-		total_cnt = SEQUENCE_SIZE(solomon_init_sequence_set);
-		sequence = solomon_init_sequence_set;
+	total_cnt = SEQUENCE_SIZE(solomon_init_sequence_set);
+	sequence = solomon_init_sequence_set;
 #endif
-		/* Power Sequence */
-		gpio_set_value(gpio_bridge_en, 1);
-		mdelay(1);
+	gpio_set_value(gpio_bridge_en, 1);
+	mdelay(1);
 
-		gpio_set_value(gpio_lcd_en, 1);
-		mdelay(2);
+	gpio_set_value(gpio_bridge_reset_n, 0);
+	mdelay(5);
+	gpio_set_value(gpio_bridge_reset_n, 1);
 
+	/* Panel pre enable*/
+	gpio_set_value(gpio_lcd_en, 1);
+	mdelay(2);
 #if defined(CONFIG_MACH_VU10)
-		gpio_set_value(gpio_lcd_en_3v, 1);
+	gpio_set_value(gpio_lcd_en_3v, 1);
 #endif
 
-		gpio_set_value(gpio_bridge_reset_n, 0);
-		mdelay(5);
-		gpio_set_value(gpio_bridge_reset_n, 1);
+	gpio_set_value(gpio_lcd_reset_n, 0);
+	mdelay(1);
+	gpio_set_value(gpio_lcd_reset_n, 1);
+	mdelay(5);
 
-		gpio_set_value(gpio_lcd_reset_n, 0);
-		mdelay(1);
-		gpio_set_value(gpio_lcd_reset_n, 1);
-		mdelay(5);
+	clk_enable(clk_s3);
 
-		clk_enable(clk_s3);
+	/* LCD_RESET_N */
+	tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_PULL_UP);
 
-		/* LCD_RESET_N */
-		tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_PULL_UP);
+	/* Init Sequence starts with bridge enable part and continues with panel enable part */
+	for (cnt = 0; cnt < total_cnt; cnt++) {
+		SPI_WRITE(sequence->value)
+		/*printk(" rgb_bridge_enable > bridge spi driver : value %8x \n", sequence->value);*/
+		if( sequence->delay )
+			mdelay( sequence->delay );
 
-		/* Init Sequence */
-		for ( cnt = 0 ; cnt < total_cnt ; cnt++ )
-		{
-			SPI_WRITE(sequence->value)
-			/*printk(" rgb_bridge_enable > bridge spi driver : value %8x \n", sequence->value);*/
-
-			if( sequence->delay )
-				mdelay( sequence->delay );
-
-			sequence++;
-		}
-		ret=lm353x_bl_on();
-		if(ret==2){
-			printk(KERN_INFO "lm353x_bl_on success *** state: 0 -> 1 \n");
-		}
-
-		//mdelay(10);
-		x3_bridge_on = TRUE;
+		sequence++;
 	}
+
+	/* Backlight call from panel part */
+	ret = lm353x_bl_on();
+	if (ret==2)
+		printk(KERN_INFO "lm353x_bl_on success *** state: 0 -> 1 \n");
+
+	x3_bridge_on = TRUE;
 	mutex_unlock(&bridge_init_mutex);
+
 	printk(KERN_INFO "%s ended \n", __func__);
 	return 0;
 }
@@ -646,24 +649,23 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 	}
 #endif
 
-	/* gpio direction & enable */
-	ret = gpio_direction_output(gpio_bridge_en, 1);
+	/* Bridge gpio setup */
+	gpio_direction_output(gpio_bridge_en, 1);
 	tegra_gpio_enable(gpio_bridge_en);
 
-	ret = gpio_direction_output(gpio_lcd_en, 1);
+	gpio_direction_output(gpio_bridge_reset_n, 1);
+	tegra_gpio_enable(gpio_bridge_reset_n);
+	
+	/* Panel gpio setup */
+	gpio_direction_output(gpio_lcd_en, 1);
 	tegra_gpio_enable(gpio_lcd_en);
 
 #if defined(CONFIG_MACH_VU10)
 	ret = gpio_direction_output(gpio_lcd_en_3v, 1);
 	tegra_gpio_enable(gpio_lcd_en_3v);
 #endif
-
 	mdelay(10);
-
-	ret = gpio_direction_output(gpio_bridge_reset_n, 1);
-	ret = gpio_direction_output(gpio_lcd_reset_n, 1);
-
-	tegra_gpio_enable(gpio_bridge_reset_n);
+	gpio_direction_output(gpio_lcd_reset_n, 1);
 	tegra_gpio_enable(gpio_lcd_reset_n);
 
 	x3_bridge_on = TRUE;
