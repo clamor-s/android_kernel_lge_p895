@@ -68,14 +68,9 @@ static struct early_suspend ssd2825_bridge_early_suspend;
 static int x3_bridge_on = FALSE;
 static int ssd2825_disable_end = TRUE;
 static int ssd2825_shutdown = FALSE;
-static int ssd2825_device_id;
-static int ssd2825_mipi_lp;
-static int ssd2825_mipi_hs;
 
 extern struct device* lm3533_bl_dev(void);
 extern int lm3533_is_ready(void);
-extern int lm3533_bl_on_off(struct device *dev, int on_off);
-extern int lm3533_bl_onoff_ForHM(struct device *dev,int on_off);
 
 #ifdef CONFIG_ESD_REG_CHECK
 struct work_register {
@@ -86,9 +81,6 @@ static int ssd2825_bridge_lcd_reg_read_esd(void);
 static int ssd2825_bridge_spi_read2(u8 value);
 #endif
 
-static int ssd2825_HM_mode = FALSE;
-
-extern int dc_set_gamma_rgb(int window_n, int red,int green,int blue);
 struct lcd_gamma_rgb cmdlineRGBvalue;
 
 static int __init dc_get_gamma_cmdline(char *str)
@@ -139,24 +131,6 @@ static int lm353x_bl_off(void)
 	return ret;
 }
 
-static int lm353x_bl_on_ForHM(void)
-{
-	int ret =0;
-	struct device *dev = lm3533_bl_dev();
-	if(dev != NULL) ret=lm3533_bl_onoff_ForHM(dev, 1);
-
-	return ret;
-}
-
-static int lm353x_bl_off_ForHM(void)
-{
-	int ret =0;
-	struct device *dev = lm3533_bl_dev();
-	if(dev != NULL) ret=lm3533_bl_onoff_ForHM(dev, 0);
-
-	return ret;
-}
-
 static struct clk *clk_s3;
 extern struct clk *clk_get_sys(const char *dev_id, const char *con_id);
 
@@ -164,9 +138,9 @@ extern int clk_set_parent(struct clk *c, struct clk *parent);
 extern int clk_set_rate(struct clk *c, unsigned long rate);
 extern int clk_enable(struct clk *c);
 extern void clk_disable(struct clk *c);
-int first_clk_disable_before_suspend = 1;
+static int first_clk_disable_before_suspend = 1;
 
-void tegra_set_clk_out_parent(int enable)
+static void tegra_set_clk_out_parent(int enable)
 {
 	int ret1 = 0, ret2 = 0, ret3 = 0, ret4 = 0;
 
@@ -194,45 +168,44 @@ void tegra_set_clk_out_parent(int enable)
 
 static int spi_write9(u16 value)
 {
-	struct spi_message m;
+	struct spi_message msg;
 	struct spi_transfer xfer;
-
-	u8 w[2];
+	u8 tx_buf[2];
 	int ret;
-
-	spi_message_init(&m);
 
 	memset(&xfer, 0, sizeof(xfer));
 
-	w[1] = (value & 0xFF00) >> 8;
-	w[0] = (value & 0x00FF);
-	xfer.tx_buf = w;
+	tx_buf[1] = (value & 0xFF00) >> 8;
+	tx_buf[0] = (value & 0x00FF);
 
+	xfer.tx_buf = tx_buf;
 	xfer.bits_per_word = 9;
 	xfer.len = 2;
-	spi_message_add_tail(&xfer, &m);
 
-	ret = spi_sync(bridge_spi, &m);
+	spi_message_init(&msg);
+	spi_message_add_tail(&xfer, &msg);
 
-	if (ret < 0)
-		dev_warn(&bridge_spi->dev, "failed to write to value (%d)\n", value);
+	ret = spi_sync(bridge_spi, &msg);
+	if (ret)
+		dev_err(&bridge_spi->dev, "failed to write to value (%d)\n", value);
 
 	return ret;
 }
 
 static int spi_read_bytes(u8 value, u16 *data)
 {
-	u8	tx_buf[2];
-	u8	rx_buf[2];
-	u16	rxtmp0, rxtmp1;
-	int	rc;
-	struct spi_message  m;
-	struct spi_transfer xfer[2];
+	struct spi_message  msg;
+	struct spi_transfer xfer[2];	
+	u8 tx_buf[2];
+	u8 rx_buf[2];
+	int ret;
+	u16 rxtmp0, rxtmp1;
 
 	memset(&xfer, 0, sizeof(xfer));
 
 	tx_buf[1] = (value & 0xFF00) >> 8;
 	tx_buf[0] = (value & 0x00FF);
+
 	xfer[0].tx_buf = tx_buf;
 	xfer[0].bits_per_word = 9;
 	xfer[0].len = 2;
@@ -241,16 +214,17 @@ static int spi_read_bytes(u8 value, u16 *data)
 	xfer[1].bits_per_word = 16;
 	xfer[1].len = 2;
 
-	spi_message_init(&m);
-	spi_message_add_tail(&xfer[0], &m);
-	spi_message_add_tail(&xfer[1], &m);
+	spi_message_init(&msg);
+	spi_message_add_tail(&xfer[0], &msg);
+	spi_message_add_tail(&xfer[1], &msg);
 
-	rc = spi_sync(bridge_spi, &m);
-	rxtmp0 = (u16)rx_buf[0];
-	rxtmp1 = (u16)rx_buf[1];
-	*data = (rxtmp1 | (rxtmp0<<8));
-	if (rc)
-		printk(KERN_ERR "spi_sync_read failed %d\n", rc);
+	ret = spi_sync(bridge_spi, &msg);
+	if (ret)
+		dev_err(&bridge_spi->dev, "spi_sync_read failed %d\n", rc);
+
+	rxtmp0 = (u16) rx_buf[0];
+	rxtmp1 = (u16) rx_buf[1];
+	*data = ( rxtmp1 | (rxtmp0 << 8) );
 
 	return rc;
 }
@@ -263,7 +237,7 @@ static void reg_check(struct work_struct *work)
 	u8 data1, data2;
 
 	if(!ssd2825_shutdown){
-		if(x3_bridge_on && ssd2825_disable_end && !ssd2825_HM_mode){
+		if(x3_bridge_on && ssd2825_disable_end){
 			readdata1 = ssd2825_bridge_spi_read2(0xB7);
 			readdata2 = ssd2825_bridge_lcd_reg_read_esd();
 
@@ -289,39 +263,44 @@ static int ssd2825_bridge_spi_read2(u8 value)
 {
 	u16 regcmd;
 	u16 readdata1;
-	regcmd= (0x00FF & value);
-	//printk("%s *** regcmd:%d \n",__func__,regcmd);
+
+	regcmd = (0x00FF & value);
+
 	spi_write9(0x00D4);
 	spi_write9(0x01FA);
 	spi_write9(0x0100);
 	spi_write9(regcmd);
-	spi_read_bytes(0xFA,&readdata1);
-	//printk("ssd2825_bridge_spi_read2 success *** spi read finished \n");
+
+	spi_read_bytes(0xFA, &readdata1);
+
 	return readdata1;
 }
 
 static int ssd2825_bridge_lcd_reg_read_esd(void)
 {
-	int cnt, read_cnt4_1;
+	int cnt, read_cnt4_1 = SEQUENCE_SIZE(solomon_reg_read_set4_1);
 	u16 readdata1;
-	spi_data *sequence4_1;
+	spi_data *sequence4_1 = solomon_reg_read_set4_1;
 
-		sequence4_1 = solomon_reg_read_set4_1;
-		read_cnt4_1=SEQUENCE_SIZE(solomon_reg_read_set4_1);
-		for ( cnt = 0 ; cnt < read_cnt4_1 ; cnt++ )
-		{
-			SPI_WRITE(sequence4_1->value)
-			if( sequence4_1->delay ) mdelay( sequence4_1->delay );
-			sequence4_1++;
-		}
-		spi_write9(0x010A);
-		spi_write9(0x0100);
-		mdelay(20);
-		spi_write9(0x00C6);
-		spi_read_bytes(0xFA,&readdata1);
-		mdelay(10);
-		spi_write9(0x00FF);
-		spi_read_bytes(0xFA,&readdata1);
+	for (cnt = 0; cnt < read_cnt4_1; cnt++) {
+		SPI_WRITE(sequence4_1->value)
+		if (sequence4_1->delay)
+			mdelay(sequence4_1->delay);
+		sequence4_1++;
+	}
+
+	spi_write9(0x010A);
+	spi_write9(0x0100);
+
+	mdelay(20);
+
+	spi_write9(0x00C6);
+	spi_read_bytes(0xFA, &readdata1);
+
+	mdelay(10);
+
+	spi_write9(0x00FF);
+	spi_read_bytes(0xFA, &readdata1);
 
 	return readdata1;
 }
@@ -340,9 +319,10 @@ static struct rgb_bridge_gpio rgb_bridge_gpios_for_spi[] = {
 	{ "LCD_RGB_CS", TEGRA_GPIO_PN4 },
 };
 
-void ssd2825_bridge_enable_spi_pins_to_nomal(void)
+static void ssd2825_bridge_enable_spi_pins_to_nomal(void)
 {
 	int i;
+
 	for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios_for_spi); i++) {
 		tegra_pinmux_set_tristate(
 			gpio_to_pingroup[rgb_bridge_gpios_for_spi[i].gpio],
@@ -351,7 +331,7 @@ void ssd2825_bridge_enable_spi_pins_to_nomal(void)
 	}
 }
 
-void ssd2825_bridge_disable_spi_pins_to_tristate(void)
+static void ssd2825_bridge_disable_spi_pins_to_tristate(void)
 {
 	int i;
 
@@ -375,7 +355,7 @@ int ssd2825_bridge_enable(void)
 {
 	int cnt, ret;
 	spi_data *sequence;
-	int total_cnt =0;
+	int total_cnt = 0;
 
 	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 
@@ -444,71 +424,72 @@ int ssd2825_bridge_disable(void)
 
 	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 
+	if (!x3_bridge_on)
+		return 0;
+
 	mutex_lock(&bridge_init_mutex);
 
-	if(x3_bridge_on) {
-		ret=lm353x_bl_off();
-		printk(KERN_INFO "lm353x_bl_off success *** state: %d -> 0 \n", ret);
+	/* Backlight call from panel part */
+	ret = lm353x_bl_off();
+	printk(KERN_INFO "lm353x_bl_off success *** state: %d -> 0 \n", ret);
+
 #if defined(CONFIG_SPI_SOLOMON_BRIDGE)
-		total_cnt = SEQUENCE_SIZE(solomon_power_off_set);
-		sequence = solomon_power_off_set;
+	total_cnt = SEQUENCE_SIZE(solomon_power_off_set);
+	sequence = solomon_power_off_set;
 #endif
 
-		for ( cnt = 0 ; cnt < total_cnt ; cnt++ )
-		{
-			SPI_WRITE(sequence->value)
-				/*printk(" rgb_bridge_disable > bridge spi"
-				  " driver : value %8x \n", sequence->value);*/
-				if( sequence->delay )
-					mdelay( sequence->delay );
-
+	/* Exit Sequence starts with panel disable part and continues with bridge disable */
+	for (cnt = 0; cnt < total_cnt; cnt++) {
+		SPI_WRITE(sequence->value)
+		/*printk(" rgb_bridge_disable > bridge spi driver : value %8x \n", sequence->value);*/
+			if (sequence->delay)
+				mdelay(sequence->delay);
 			sequence++;
-		}
-		mdelay(10);
-
-		gpio_set_value(gpio_lcd_reset_n, 0);
-		mdelay(5);
-
-#if defined(CONFIG_MACH_VU10)
-		gpio_set_value(gpio_lcd_en_3v, 0);
-#endif
-
-		mdelay(2);
-		gpio_set_value(gpio_lcd_en, 0);
-
-		gpio_set_value(gpio_bridge_reset_n, 0);
-		mdelay(5);
-		gpio_set_value(gpio_bridge_en, 0);
-
-		/* LCD_RESET_N */
-		tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_NORMAL);
-
-		if (first_clk_disable_before_suspend == 1) {
-		    first_clk_disable_before_suspend = 0;
-		    tegra_set_clk_out_parent(false);
-		} else
-			clk_disable(clk_s3);
-
-		ssd2825_bridge_disable_spi_pins_to_tristate();
-		x3_bridge_on = FALSE;
-		ssd2825_disable_end = TRUE;
 	}
 
+	/* Panel post disable */
+	mdelay(10);
+	gpio_set_value(gpio_lcd_reset_n, 0);
+	mdelay(5);
+
+#if defined(CONFIG_MACH_VU10)
+	gpio_set_value(gpio_lcd_en_3v, 0);
+#endif
+	mdelay(2);
+	gpio_set_value(gpio_lcd_en, 0);
+
+	tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_NORMAL);
+
+	if (first_clk_disable_before_suspend == 1) {
+		first_clk_disable_before_suspend = 0;
+		tegra_set_clk_out_parent(false);
+	} else
+		clk_disable(clk_s3);
+
+	/* Bridge post disable */
+	gpio_set_value(gpio_bridge_reset_n, 0);
+	mdelay(5);
+	gpio_set_value(gpio_bridge_en, 0);
+
+	ssd2825_bridge_disable_spi_pins_to_tristate();
+
+	x3_bridge_on = FALSE;
+	ssd2825_disable_end = TRUE;
 	mutex_unlock(&bridge_init_mutex);
 
 	printk(KERN_INFO "%s ended \n", __func__);
-
 	return 0;
 }
 
-void ssd2825_bridge_spi_suspend(struct early_suspend * h)
+static void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 {
-/*                                 *//*2012/01/19*/
 	ssd2825_disable_end = FALSE;
+
 	printk(KERN_INFO "%s start \n", __func__);
 #ifdef CONFIG_ESD_REG_CHECK
 	cancel_delayed_work_sync(&work_instance->work_reg_check);
 #endif
+
 	ssd2825_bridge_disable();
 
 	if(cmdlineRGBvalue.table_type==GAMMA_NV_ENABLED_SEND)
@@ -519,23 +500,26 @@ void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 		cmdlineRGBvalue.table_type=GAMMA_NV_RETURNED;
 
 	printk(KERN_INFO "%s end \n", __func__);
-	//return 0;
 }
 
-void ssd2825_bridge_spi_shutdown(struct spi_device *spi)
+static void ssd2825_bridge_spi_shutdown(struct spi_device *spi)
 {
 	int ret;
+
 	printk(KERN_INFO "%s \n", __func__);
+
 	ssd2825_disable_end = FALSE;
-	ret=lm353x_bl_off();
-	printk(KERN_INFO "lm353x_bl_off *** state: %d -> 0 \n", ret);
+
+//	This is present in bridge disable
+//	ret = lm353x_bl_off();
+//	printk(KERN_INFO "lm353x_bl_off *** state: %d -> 0 \n", ret);
 #ifdef CONFIG_ESD_REG_CHECK
 	cancel_delayed_work_sync(&work_instance->work_reg_check);
 #endif
 	ssd2825_bridge_disable();
 }
 
-void ssd2825_bridge_spi_resume(struct early_suspend * h)
+static void ssd2825_bridge_spi_resume(struct early_suspend * h)
 {
 	printk(KERN_INFO "%s start \n", __func__);
 #ifdef CONFIG_ESD_REG_CHECK
@@ -559,16 +543,13 @@ static int ssd2825_bridge_reboot_notify(struct notifier_block *nb,
 #ifdef CONFIG_ESD_REG_CHECK
 			cancel_delayed_work(&work_instance->work_reg_check);
 #endif
-			//ret=lm353x_bl_off();
-			//printk(KERN_INFO "lm353x_bl_off success *** state: %d -> 0 \n", ret);
-
 			ssd2825_bridge_disable();
 		}
 		return NOTIFY_OK;
 	}
+
 	return NOTIFY_DONE;
 }
-
 
 static struct notifier_block ssd2825_bridge_reboot_nb = {
 	.notifier_call = ssd2825_bridge_reboot_notify,
@@ -577,23 +558,20 @@ static struct notifier_block ssd2825_bridge_reboot_nb = {
 static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 {
 	struct bridge_platform_data *pdata;
-	int ret,err;
+	int ret, err;
 	pdata = spi->dev.platform_data;
 
-	if(!pdata){
+	if (!pdata) {
 		printk("ssd2825_bridge_spi_probe platform data null pointer \n");
 		return 0;
 	}
 
 	/* request platform data */
-	spi->bits_per_word = pdata->bits_per_word;
+	spi->bits_per_word	= pdata->bits_per_word;
+	spi->mode		= pdata->mode;
+	spi->max_speed_hz	= pdata->max_speed_hz;
 
-	/*printk(" bridge spi driver : pdata->bits_per_word --> %d \n",pdata->bits_per_word);*/
-	spi->mode = pdata->mode;
-	spi->max_speed_hz = pdata->max_speed_hz;
-
-	gpio_lcd_reset_n		= pdata->lcd_reset_n;
-
+	gpio_lcd_reset_n	= pdata->lcd_reset_n;
 	gpio_lcd_en 		= pdata->lcd_en;
 #if defined(CONFIG_MACH_VU10)
 	gpio_lcd_en_3v		= pdata->lcd_en_3v;
@@ -623,6 +601,7 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 		printk(KERN_INFO "%s: gpio_lcd_reset_n gpio_request failed with %d \n", __func__, ret);
 		goto gpio_lcd_reset_error;
 	}
+
 	ret = gpio_request(gpio_bridge_reset_n, "bridge_reset");
 	if (ret < 0){
 		printk(KERN_INFO "%s: gpio_bridge_reset_n gpio_request failed with %d \n", __func__, ret);
@@ -648,7 +627,6 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 		goto gpio_lcd_en_error;
 	}
 #endif
-
 	/* Bridge gpio setup */
 	gpio_direction_output(gpio_bridge_en, 1);
 	tegra_gpio_enable(gpio_bridge_en);
@@ -683,7 +661,6 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 
 	goto probe_success;
 
-/* probe error */
 gpio_lcd_en_error:
 	gpio_free(gpio_lcd_en);
 gpio_bridge_en_error:
@@ -692,7 +669,6 @@ gpio_lcd_reset_error:
 	gpio_free(gpio_lcd_reset_n);
 gpio_bridge_reset_error:
 	gpio_free(gpio_bridge_reset_n);
-/* probe success */
 probe_success:
 	return 0;
 }
