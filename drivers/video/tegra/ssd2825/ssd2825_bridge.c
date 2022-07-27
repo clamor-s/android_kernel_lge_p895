@@ -366,10 +366,7 @@ int ssd2825_bridge_enable(void)
 
 	/* Bridge pre enable */
 	ssd2825_bridge_enable_spi_pins_to_nomal();
-#if defined(CONFIG_SPI_SOLOMON_BRIDGE)
-	total_cnt = SEQUENCE_SIZE(solomon_init_sequence_set);
-	sequence = solomon_init_sequence_set;
-#endif
+
 	gpio_set_value(gpio_bridge_en, 1);
 	mdelay(1);
 
@@ -394,12 +391,24 @@ int ssd2825_bridge_enable(void)
 	/* LCD_RESET_N */
 	tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_PULL_UP);
 
-	/* Init Sequence starts with bridge enable part and continues with panel enable part */
+	/* Init Sequence for bridge */
+	total_cnt = SEQUENCE_SIZE(solomon_bridge_init_sequence);
+	sequence = solomon_bridge_init_sequence;
 	for (cnt = 0; cnt < total_cnt; cnt++) {
 		SPI_WRITE(sequence->value)
-		/*printk(" rgb_bridge_enable > bridge spi driver : value %8x \n", sequence->value);*/
-		if( sequence->delay )
-			mdelay( sequence->delay );
+		if (sequence->delay)
+			mdelay(sequence->delay);
+
+		sequence++;
+	}
+
+	/* Init Sequence for panel */
+	total_cnt = SEQUENCE_SIZE(solomon_dsi_panel_init_sequence);
+	sequence = solomon_dsi_panel_init_sequence;
+	for (cnt = 0; cnt < total_cnt; cnt++) {
+		SPI_WRITE(sequence->value)
+		if (sequence->delay)
+			mdelay(sequence->delay);
 
 		sequence++;
 	}
@@ -433,18 +442,26 @@ int ssd2825_bridge_disable(void)
 	ret = lm353x_bl_off();
 	printk(KERN_INFO "lm353x_bl_off success *** state: %d -> 0 \n", ret);
 
-#if defined(CONFIG_SPI_SOLOMON_BRIDGE)
-	total_cnt = SEQUENCE_SIZE(solomon_power_off_set);
-	sequence = solomon_power_off_set;
-#endif
-
-	/* Exit Sequence starts with panel disable part and continues with bridge disable */
+	/* Exit Sequence for panel */
+	total_cnt = SEQUENCE_SIZE(solomon_dsi_panel_power_off_sequence);
+	sequence = solomon_dsi_panel_power_off_sequence;
 	for (cnt = 0; cnt < total_cnt; cnt++) {
 		SPI_WRITE(sequence->value)
-		/*printk(" rgb_bridge_disable > bridge spi driver : value %8x \n", sequence->value);*/
-			if (sequence->delay)
-				mdelay(sequence->delay);
-			sequence++;
+		if (sequence->delay)
+			mdelay(sequence->delay);
+
+		sequence++;
+	}
+
+	/* Exit Sequence for bridge */
+	total_cnt = SEQUENCE_SIZE(solomon_bridge_power_off_sequence);
+	sequence = solomon_bridge_power_off_sequence;
+	for (cnt = 0; cnt < total_cnt; cnt++) {
+		SPI_WRITE(sequence->value)
+		if (sequence->delay)
+			mdelay(sequence->delay);
+
+		sequence++;
 	}
 
 	/* Panel post disable */
