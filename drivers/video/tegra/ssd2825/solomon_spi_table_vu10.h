@@ -42,48 +42,48 @@ struct spi_cmd_data16 {
 };
 
 struct spi_cmd_data16 solomon_init_sequence_set[] = {
-		{0, 0x00B1}, {0, 0x0105}, {0, 0x0102},
-		{0, 0x00B2}, {0, 0x0156}, {0, 0x010A},
-		{0, 0x00B3}, {0, 0x0174}, {0, 0x0118},
-		{0, 0x00B4}, {0, 0x0100}, {0, 0x0103},
-		{0, 0x00B5}, {0, 0x0100}, {0, 0x0104},
+		{0, SSD2825_RGB_INTERFACE_CTRL_REG_1}, {0, 0x0105}, {0, 0x0102},
+		{0, SSD2825_RGB_INTERFACE_CTRL_REG_2}, {0, 0x0156}, {0, 0x010A},
+		{0, SSD2825_RGB_INTERFACE_CTRL_REG_3}, {0, 0x0174}, {0, 0x0118},
+		{0, SSD2825_RGB_INTERFACE_CTRL_REG_4}, {0, 0x0100}, {0, 0x0103},
+		{0, SSD2825_RGB_INTERFACE_CTRL_REG_5}, {0, 0x0100}, {0, 0x0104},
 #ifdef MIPI_NON_BURST_MODE
-		{0, 0x00B6}, {0, 0x0107}, {0, 0x0100},
+		{0, SSD2825_RGB_INTERFACE_CTRL_REG_6}, {0, 0x0107}, {0, 0x0100},
 #else
-		{0, 0x00B6}, {0, 0x010B}, {0, 0x0100},
+		{0, SSD2825_RGB_INTERFACE_CTRL_REG_6}, {0, 0x010B}, {0, 0x0100},
 #endif
-		{0, 0x00DE}, {0, 0x0103}, {0, 0x0100},
-		{0, 0x00D6}, {0, 0x0104}, {0, 0x0100},
-		{0, 0x00B9}, {0, 0x0100}, {0, 0x0100},
-		{0, 0x00C4}, {0, 0x0101}, {0, 0x0100},
-		{0, 0x00C9}, {0, 0x0103}, {0, 0x0121},
-		{0, 0x00BA}, {0, 0x01D7}, {0, 0x018C},
-		{0, 0x00BB}, {0, 0x0109}, {0, 0x0100},
-		{0, 0x00B9}, {0, 0x0101}, {0, 0x0100},
-		{0, 0x00B8}, {0, 0x0100}, {10, 0x0100},
-		{0, 0x00B7}, {0, 0x0142}, {0, 0x0103},
-		{0, 0x00B8}, {0, 0x0100}, {0, 0x0100},
-		{0, 0x00BC}, {0, 0x0102}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x0111}, {80, 0x0100},
-		{0, 0x00BC}, {0, 0x0102}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x0136}, {20, 0x0100},
-		{0, 0x00BC}, {0, 0x0102}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x013A}, {0, 0x0170},
-		{0, 0x00B7}, {0, 0x0102}, {0, 0x0103},
-		{0, 0x00B8}, {0, 0x0100}, {0, 0x0100},
-		{0, 0x00BC}, {0, 0x0102}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x01B0}, {0, 0x0104},
+		{0, SSD2825_LANE_CONFIGURATION_REG}, {0, 0x0103}, {0, 0x0100},
+		{0, SSD2825_TEST_REG}, {0, 0x0104}, {0, 0x0100},
+		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+		{0, SSD2825_LINE_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
+		{0, SSD2825_DELAY_ADJ_REG_1}, {0, 0x0103}, {0, 0x0121},
+		{0, SSD2825_PLL_CONFIGURATION_REG}, {0, 0x01D7}, {0, 0x018C},
+		{0, SSD2825_CLOCK_CTRL_REG}, {0, 0x0109}, {0, 0x0100},
+		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {10, 0x0100},
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0142}, {0, 0x0103},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0111}, {80, 0x0100},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0136}, {20, 0x0100},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x013A}, {0, 0x0170},
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0102}, {0, 0x0103},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x01B0}, {0, 0x0104},
 #if defined(HITACHI_DIGITAL_CONTRAST_ADJ)
-		{0, 0x00BC}, {0, 0x0104}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x01CC}, {0, 0x01DC}, {0, 0x01B4}, {0, 0x01FF},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0104}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x01CC}, {0, 0x01DC}, {0, 0x01B4}, {0, 0x01FF},
 #endif
 
 #if defined(HITACHI_GAMMA_S_CURVE)
 #if defined(GAMMA_3)
 		/* DO *** S-curve */
 		/* gamma setting A - Gamma Setting */
-		{0, 0x00BC}, {0, 0x0119}, {0, 0x0100},
-		{0, 0x00BF},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0119}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG},
 		{0, 0x01C8}, {0, 0x010B}, {0, 0x010D},
 		{0, 0x0110}, {0, 0x0114}, {0, 0x0113},
 		{0, 0x011D}, {0, 0x0120}, {0, 0x0118},
@@ -96,8 +96,8 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 #elif defined(GAMMA_2)
 		/* DV2 *** S-curve */
 		/* gamma setting A - Gamma Setting */
-		{0, 0x00BC}, {0, 0x0119}, {0, 0x0100},
-		{0, 0x00BF},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0119}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG},
 		{0, 0x01C8}, {0, 0x0100}, {0, 0x0105},
 		{0, 0x010B}, {0, 0x010F}, {0, 0x0111},
 		{0, 0x011D}, {0, 0x0120}, {0, 0x0118},
@@ -110,8 +110,8 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 #else
 		/* Bring Up 1st *** S-curve */
 		/*gamma setting A - Gamma Setting*/
-		{0, 0x00BC}, {0, 0x0119}, {0, 0x0100},
-		{0, 0x00BF},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0119}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG},
 		{0, 0x01C8}, {0, 0x0100}, {0, 0x0106},
 		{0, 0x010A}, {0, 0x010F}, {0, 0x0114},
 		{0, 0x011F}, {0, 0x011F}, {0, 0x0117},
@@ -126,8 +126,8 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 
 #if defined(HITACHI_INVERSION_SELECT)
 		//Panel Driving Setting
-		{0, 0x00BC}, {0, 0x0109}, {0, 0x0100},
-		{0, 0x00BF},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0109}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG},
 #if defined(COLUMN_INVERSION)
 		{0, 0x01C1}, {0, 0x0100}, {0, 0x0150}, //Column
 		{0, 0x0103}, {0, 0x0122}, {0, 0x0116},
@@ -141,8 +141,8 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 
 #if defined(HITACHI_POWER_SETTING)
 		//Panel Driving Setting
-		{0, 0x00BC}, {0, 0x0109}, {0, 0x0100},
-		{0, 0x00BF},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0109}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG},
 #if defined(COLUMN_INVERSION)
 		{0, 0x01D1}, {0, 0x018E}, {0, 0x0127}, //Column
 		{0, 0x0144}, {0, 0x0163}, {0, 0x0197},
@@ -154,50 +154,34 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 #endif
 #endif
 		/* Manufacturer Command Access Protect On */
-		{0, 0x00BC}, {0, 0x0102}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x01B0}, {0, 0x0103},
-		{0, 0x00B7}, {0, 0x0142}, {0, 0x0103},
-		{0, 0x00B8}, {0, 0x0100}, {0, 0x0100},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x01B0}, {0, 0x0103},
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0142}, {0, 0x0103},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
 
 		/* Display on */
-		{0, 0x00BC}, {0, 0x0102}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x0129}, {10, 0x0100},
-		{0, 0x00B9}, {0, 0x0101}, {0, 0x0100},
-		{0, 0x00B8}, {0, 0x0100}, {0, 0x0100},
-		{0, 0x00B7}, {0, 0x0149}, {0, 0x0103},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0129}, {10, 0x0100},
+		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0149}, {0, 0x0103},
 };
 
 static struct spi_cmd_data16 solomon_power_off_set[] = {
-		{0, 0x00B7}, {0, 0x0149}, {0, 0x0103},
-		{0, 0x00BC}, {0, 0x0102}, {0, 0x0100},
-		{0, 0x00BF}, {0, 0x0128}, {0, 0x0100}, //set_display_off
-		{0, 0x00BF}, {0, 0x0110}, {100, 0x0100}, //enter_sleep_mode
-		{0, 0x00B7}, {0, 0x0100}, {0, 0x0103},
-		{0, 0x00B9}, {0, 0x0100}, {0, 0x0100},
-};
-
-const char ssd2825_reg_set[] = {
-	0xB0,0xB1,0xB2,0xB3,0xB4,
-	0xB5,0xB6,0xDD,0xB7,0xB8,
-	0xB9,0xBA,0xD5,0xBB,0xBC,
-	0xBD,0xBE,0xBF,0xC0,0xC1,
-	0xC2,0xC3,0xC4,0xC5,0xC6,
-	0xC7,0xC8,0xC9,0xCA,0xCB,
-	0xCC,0xCD,0xCE,0xCF,0xD0,
-	0xD1,0xD2,0xD3,0xD4,0xD6,
-	0xD7,0xD8,0xD9,0xDA,0xDB,
-	0xDC,0xDE,0xDF,0xE0,0xE1,
-	0xE2,0xE3,0xE4,0xE5,0xE6,
-	0xE7,0xE8,0xE9,0xEA,0xEB,
-	0xFF
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0149}, {0, 0x0103},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0128}, {0, 0x0100}, //set_display_off
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0110}, {100, 0x0100}, //enter_sleep_mode
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0100}, {0, 0x0103},
+		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
 };
 
 /* DCS packets in HS mode */
 struct spi_cmd_data16 solomon_reg_read_set4_1[] = {
-		{0, 0x00C1}, {0, 0x010A}, {0, 0x0100},
-		{0, 0x00B7}, {0, 0x01C9}, {0, 0x0103},
+		{0, 0xC1}, {0, 0x010A}, {0, 0x0100},
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x01C9}, {0, 0x0103},
 		/*********/
-		{0, 0x00BC}, {0, 0x0101}, {0, 0x0100},
-		{0, 0x00BF},
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0101}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG},
 };
 #endif // _SPI_SOLOMON_TABLE_H_
