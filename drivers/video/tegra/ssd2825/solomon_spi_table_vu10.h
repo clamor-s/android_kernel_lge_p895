@@ -41,7 +41,7 @@ struct spi_cmd_data16 {
 	unsigned short value;
 };
 
-struct spi_cmd_data16 solomon_init_sequence_set[] = {
+struct spi_cmd_data16 solomon_bridge_init_sequence[] = {
 		{0, SSD2825_RGB_INTERFACE_CTRL_REG_1}, {0, 0x0105}, {0, 0x0102},
 		{0, SSD2825_RGB_INTERFACE_CTRL_REG_2}, {0, 0x0156}, {0, 0x010A},
 		{0, SSD2825_RGB_INTERFACE_CTRL_REG_3}, {0, 0x0174}, {0, 0x0118},
@@ -61,25 +61,34 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		{0, SSD2825_CLOCK_CTRL_REG}, {0, 0x0109}, {0, 0x0100},
 		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {10, 0x0100},
+};
+
+struct spi_cmd_data16 solomon_dsi_panel_init_sequence[] = {
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0142}, {0, 0x0103},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0111}, {80, 0x0100},
+
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0136}, {20, 0x0100},
+
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x013A}, {0, 0x0170},
+
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0102}, {0, 0x0103},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x01B0}, {0, 0x0104},
-#if defined(HITACHI_DIGITAL_CONTRAST_ADJ)
+
+#ifdef HITACHI_DIGITAL_CONTRAST_ADJ
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0104}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x01CC}, {0, 0x01DC}, {0, 0x01B4}, {0, 0x01FF},
 #endif
 
-#if defined(HITACHI_GAMMA_S_CURVE)
-#if defined(GAMMA_3)
+#ifdef HITACHI_GAMMA_S_CURVE
+#ifdef GAMMA_3
 		/* DO *** S-curve */
 		/* gamma setting A - Gamma Setting */
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0119}, {0, 0x0100},
@@ -124,11 +133,11 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 #endif
 #endif //HITACHI_GAMMA_S_CURVE
 
-#if defined(HITACHI_INVERSION_SELECT)
+#ifdef HITACHI_INVERSION_SELECT
 		//Panel Driving Setting
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0109}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG},
-#if defined(COLUMN_INVERSION)
+#ifdef COLUMN_INVERSION
 		{0, 0x01C1}, {0, 0x0100}, {0, 0x0150}, //Column
 		{0, 0x0103}, {0, 0x0122}, {0, 0x0116},
 		{0, 0x0106}, {0, 0x0160}, {0, 0x0111},
@@ -139,11 +148,11 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 #endif
 #endif
 
-#if defined(HITACHI_POWER_SETTING)
+#ifdef HITACHI_POWER_SETTING
 		//Panel Driving Setting
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0109}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG},
-#if defined(COLUMN_INVERSION)
+#ifdef COLUMN_INVERSION
 		{0, 0x01D1}, {0, 0x018E}, {0, 0x0127}, //Column
 		{0, 0x0144}, {0, 0x0163}, {0, 0x0197},
 		{0, 0x0163}, {0, 0x01C9}, {0, 0x0106},
@@ -153,32 +162,40 @@ struct spi_cmd_data16 solomon_init_sequence_set[] = {
 		{0, 0x0173}, {0, 0x01EB}, {0, 0x0106},
 #endif
 #endif
-		/* Manufacturer Command Access Protect On */
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x01B0}, {0, 0x0103},
+
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0142}, {0, 0x0103},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
 
-		/* Display on */
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0129}, {10, 0x0100},
+
 		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0149}, {0, 0x0103},
 };
 
-static struct spi_cmd_data16 solomon_power_off_set[] = {
+static struct spi_cmd_data16 solomon_dsi_panel_power_off_sequence[] = {
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0149}, {0, 0x0103},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
-		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0128}, {0, 0x0100}, //set_display_off
-		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0110}, {100, 0x0100}, //enter_sleep_mode
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0128}, {0, 0x0100},
+
+		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0110}, {100, 0x0100},
+};
+
+static struct spi_cmd_data16 solomon_bridge_power_off_sequence[] = {
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0100}, {0, 0x0103},
 		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
 };
 
 /* DCS packets in HS mode */
 struct spi_cmd_data16 solomon_reg_read_set4_1[] = {
-		{0, 0xC1}, {0, 0x010A}, {0, 0x0100},
+		{0, SSD2825_MAX_RETURN_SIZE_REG}, {0, 0x010A}, {0, 0x0100},
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x01C9}, {0, 0x0103},
 		/*********/
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0101}, {0, 0x0100},
