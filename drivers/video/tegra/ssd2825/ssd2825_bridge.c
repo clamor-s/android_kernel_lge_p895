@@ -649,252 +649,6 @@ int ssd2825_bridge_disable(void)
 	return 0;
 }
 
-static ssize_t ssd2825_bridge_show_device_id(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
-{
-	int r;
-
-	printk("%s \n",__func__);
-
-	ssd2825_bridge_spi_read();
-
-	r = snprintf(buf, PAGE_SIZE,
-			"ssd2825 bridge device_id : 0x%x \n",
-			ssd2825_device_id);
-
-	return r;
-}
-
-static ssize_t ssd2825_bridge_show_mipi_lp(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
-{
-	int r, ret;
-
-	printk("%s \n",__func__);
-
-	ssd2825_HM_mode = TRUE;
-
-	/*Hitachi HD LCD command 0Ch : return 70h*/
-	printk("MIPI DCS packet read in LP mode \n");
-
-	ret=lm353x_bl_off_ForHM();
-
-	if (ret==1) {
-		ssd2825_bridge_HitachiLcd_spi_read(2);
-		mdelay(500);
-		lm353x_bl_on_ForHM();
-	} else
-		printk("Error !!! Please turn on the backlight LED and LCD with Power key \n");
-
-	r = snprintf(buf, PAGE_SIZE,
-			"ssd2825 bridge mipi_lp : 0x%x \n",
-			ssd2825_mipi_lp);
-
-	ssd2825_HM_mode = FALSE;
-
-	return r;
-}
-
-static ssize_t ssd2825_bridge_show_mipi_hs(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
-{
-	int r, ret;
-
-	printk("%s \n",__func__);
-
-	ssd2825_HM_mode = TRUE;
-
-	/*Hitachi HD LCD command 0Ch : return 70h*/
-	printk("MIPI DCS packet read in LP mode \n");
-
-	ret = lm353x_bl_off_ForHM();
-	if (ret == 1) {
-		ssd2825_bridge_HitachiLcd_spi_read(3);
-		mdelay(500);
-		lm353x_bl_on_ForHM();
-	} else 
-		printk("Error !!! Please turn on the backlight LED and LCD with Power key \n");
-
-	r = snprintf(buf, PAGE_SIZE,
-			"ssd2825 bridge mipi_hs : 0x%x \n",
-			ssd2825_mipi_hs);
-
-	ssd2825_HM_mode = FALSE;
-
-	return r;
-}
-
-static ssize_t ssd2825_bridge_store_reg_dump(struct device *dev,
-				      struct device_attribute *attr,
-				      const char *buf,
-				      size_t count)
-{
-	int readdata,i,sendcmd;
-
-	sscanf(buf, "%d", &sendcmd);
-
-	if (sendcmd == 1) {
-		/*ssd2825 all reg dump*/
-		printk("\n %s *** cmd( data ) *** \n",__func__);
-		for(i=0;i<sizeof(ssd2825_reg_set);i++){
-			readdata=ssd2825_bridge_spi_read2(ssd2825_reg_set[i]);
-			printk(" 0x%x( 0x%x ) , ",ssd2825_reg_set[i],readdata);
-			if(i%10 == 9)
-				printk("\n");
-		}
-		printk("\n");
-	}
-
-	return count;
-}
-
-static void ssd2825_bridge_reg_dump_test(void)
-{
-	int readdata,i;
-	/*ssd2825 all reg dump*/
-
-	printk("\n %s *** cmd(data) \n",__func__);
-
-	for(i = 0; i < sizeof(ssd2825_reg_set); i++) {
-		readdata = ssd2825_bridge_spi_read2(ssd2825_reg_set[i]);
-		printk(" 0x%x( 0x%x ) , ",ssd2825_reg_set[i],readdata);
-		if (i%10 == 9)
-			printk("\n");
-	}
-
-	printk("\n");
-}
-
-static ssize_t ssd2825_bridge_reg_read(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	int cmd,ret;
-
-	sscanf(buf, "%d", &cmd);
-
-	switch (cmd){
-		case 1:	/* SSD2825 Bridge IC register vendor IC SPI read*/
-			printk("SPI I/F Test for SSD2825 \n");
-			ssd2825_bridge_spi_read();
-			break;
-		case 2:	/* Hitachi LCD register SPI read via MIPI DCS packet read in LP mode*/
-			printk("MIPI DCS packet read in LP mode \n");
-			ret=lm353x_bl_off_ForHM();
-			if(ret==1){
-				ssd2825_bridge_HitachiLcd_spi_read(2);
-				mdelay(500);
-				lm353x_bl_on_ForHM();
-			}
-			else{
-				printk("Error !!! Please turn on the backlight LED and LCD with Power key \n");
-			}
-			break;
-		case 3:	/* Hitachi LCD register SPI read via MIPI DCS packet read in HS mode*/
-			printk("MIPI DCS packet read in HS mode \n");
-			ret=lm353x_bl_off_ForHM();
-			if(ret==1){
-				ssd2825_bridge_HitachiLcd_spi_read(3);
-				mdelay(500);
-				lm353x_bl_on_ForHM();
-			}
-			else{
-				printk("Error !!! Please turn on the backlight LED and LCD with Power key \n");
-			}
-			break;
-		case 4:	/* Hitachi LCD register SPI read via MIPI Generic packet read in LP mode*/
-			printk("MIPI Generic packet read in LP mode \n");
-			ret=lm353x_bl_off_ForHM();
-			if(ret==1){
-				ssd2825_bridge_HitachiLcd_spi_read(4);
-				mdelay(500);
-				lm353x_bl_on_ForHM();
-			}
-			else{
-				printk("Error !!! Please turn on the backlight LED and LCD with Power key \n");
-			}
-			break;
-		case 5:	/* Hitachi LCD register SPI read via MIPI Generic packet read in HS mode*/
-			printk("MIPI Generic packet read in HS mode \n");
-			ret=lm353x_bl_off_ForHM();
-			if(ret==1){
-				ssd2825_bridge_HitachiLcd_spi_read(5);
-				mdelay(500);
-				lm353x_bl_on_ForHM();
-			}
-			else{
-				printk("Error !!! Please turn on the backlight LED and LCD with Power key \n");
-			}
-			break;
-		case 6:	/* SSD2825 Bridge IC register dump test*/
-			printk("SSD2825 Bridge IC register dump test \n");
-			ssd2825_bridge_reg_dump_test();
-			break;
-		default :
-			break;
-	}
-	return count;
-}
-
-static ssize_t ssd2825_bridge_reg_read2(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	int cmd;
-
-	sscanf(buf, "%d", &cmd);
-
-	/* SSD2825 Bridge IC normal register SPI read*/
-	//printk("SSD2825 Bridge IC normal register SPI read *** cmd 0x%x \n",cmd);
-	ssd2825_bridge_spi_read2(cmd);
-
-	return count;
-}
-
-static ssize_t display_gamma_tuning_store(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t size)
-{
-	int red,green,blue;
-	sscanf(buf, "%d,%d,%d",&red,&green,&blue);
-	printk("RED:%d GREEN:%d BLUE:%d\n",red,green,blue);
-	dc_set_gamma_rgb(0,red,green,blue);
-	if(cmdlineRGBvalue.table_type==GAMMA_NV_ENABLED){
-		cmdlineRGBvalue.table_type=GAMMA_NV_ENABLED_SEND;
-	}
-	else if(cmdlineRGBvalue.table_type==GAMMA_NV_SAVED){
-		cmdlineRGBvalue.table_type=GAMMA_NV_SAVED_SEND;
-	}
-	else{
-		cmdlineRGBvalue.table_type=GAMMA_NV_SEND;
-	}
-
-	return size;
-}
-
-static ssize_t display_gamma_saved_store(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t size)
-{
-	int red,green,blue;
-	sscanf(buf, "%d,%d,%d",&red,&green,&blue);
-	printk("RED:%d GREEN:%d BLUE:%d\n",red,green,blue);
-	dc_set_gamma_rgb(0,red,green,blue);
-	cmdlineRGBvalue.table_type=GAMMA_NV_SAVED;
-	cmdlineRGBvalue.red=red;
-	cmdlineRGBvalue.green=green;
-	cmdlineRGBvalue.blue=blue;
-
-	return size;
-}
-DEVICE_ATTR(gamma_tuning, 0660, NULL, display_gamma_tuning_store);
-DEVICE_ATTR(gamma_saved, 0660, NULL, display_gamma_saved_store);
-DEVICE_ATTR(device_id, 0660, ssd2825_bridge_show_device_id, NULL);
-DEVICE_ATTR(mipi_lp, 0660, ssd2825_bridge_show_mipi_lp, NULL);
-DEVICE_ATTR(mipi_hs, 0660, ssd2825_bridge_show_mipi_hs, NULL);
-DEVICE_ATTR(reg_dump, 0660, NULL, ssd2825_bridge_store_reg_dump);
-DEVICE_ATTR(reg_read, 0660, NULL, ssd2825_bridge_reg_read);
-DEVICE_ATTR(reg_read2, 0660, NULL, ssd2825_bridge_reg_read2);
-
 void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 {
 /*                                 *//*2012/01/19*/
@@ -990,7 +744,7 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 
 	gpio_lcd_en 		= pdata->lcd_en;
 #if defined(CONFIG_MACH_VU10)
-	gpio_lcd_en_3v  = pdata->lcd_en_3v;
+	gpio_lcd_en_3v		= pdata->lcd_en_3v;
 #endif
 	gpio_bridge_en		= pdata->bridge_en;
 	gpio_bridge_reset_n	= pdata->bridge_reset_n;
@@ -1065,15 +819,6 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 
 	x3_bridge_on = TRUE;
 
-	err = device_create_file(&spi->dev, &dev_attr_device_id);
-	err = device_create_file(&spi->dev, &dev_attr_mipi_lp);
-	err = device_create_file(&spi->dev, &dev_attr_mipi_hs);
-	err = device_create_file(&spi->dev, &dev_attr_reg_dump);
-	err = device_create_file(&spi->dev, &dev_attr_reg_read);
-	err = device_create_file(&spi->dev, &dev_attr_reg_read2);
-	err = device_create_file(&spi->dev, &dev_attr_gamma_tuning);
-	err = device_create_file(&spi->dev, &dev_attr_gamma_saved);
-
 	bridge_spi = spi;
 
 	ssd2825_bridge_early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB-10;
@@ -1101,19 +846,6 @@ probe_success:
 	return 0;
 }
 
-static int __devexit ssd2825_bridge_spi_remove(struct spi_device *spi)
-{
-	device_remove_file(&spi->dev, &dev_attr_device_id);
-	device_remove_file(&spi->dev, &dev_attr_mipi_lp);
-	device_remove_file(&spi->dev, &dev_attr_mipi_hs);
-	device_remove_file(&spi->dev, &dev_attr_reg_dump);
-	device_remove_file(&spi->dev, &dev_attr_reg_read);
-	device_remove_file(&spi->dev, &dev_attr_reg_read2);
-	device_remove_file(&spi->dev, &dev_attr_gamma_tuning);
-	device_remove_file(&spi->dev, &dev_attr_gamma_saved);
-	return 0;
-}
-
 static struct spi_driver ssd2825_bridge_spi_driver = {
 	.driver = {
 		.name	= STR_RGB_BRIDGE,
@@ -1121,7 +853,6 @@ static struct spi_driver ssd2825_bridge_spi_driver = {
 		.owner	= THIS_MODULE,
 	},
 	.probe = ssd2825_bridge_spi_probe,
-	.remove = __devexit_p(ssd2825_bridge_spi_remove),
 	.shutdown = ssd2825_bridge_spi_shutdown,
 };
 
