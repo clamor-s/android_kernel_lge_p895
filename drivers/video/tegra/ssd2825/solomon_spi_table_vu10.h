@@ -54,6 +54,7 @@ struct spi_cmd_data16 solomon_bridge_init_sequence[] = {
 #endif
 		{0, SSD2825_LANE_CONFIGURATION_REG}, {0, 0x0103}, {0, 0x0100},
 		{0, SSD2825_TEST_REG}, {0, 0x0104}, {0, 0x0100},
+
 		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
 		{0, SSD2825_LINE_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
 		{0, SSD2825_DELAY_ADJ_REG_1}, {0, 0x0103}, {0, 0x0121},
@@ -61,6 +62,9 @@ struct spi_cmd_data16 solomon_bridge_init_sequence[] = {
 		{0, SSD2825_CLOCK_CTRL_REG}, {0, 0x0109}, {0, 0x0100},
 		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {10, 0x0100},
+
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0142}, {0, 0x0103},
+		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
 };
 
 struct spi_cmd_data16 solomon_dsi_panel_init_sequence[] = {
@@ -171,9 +175,9 @@ struct spi_cmd_data16 solomon_dsi_panel_init_sequence[] = {
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0129}, {10, 0x0100},
 
+		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0149}, {0, 0x0103},
 		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
-		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0149}, {0, 0x0103},
 };
 
 static struct spi_cmd_data16 solomon_dsi_panel_power_off_sequence[] = {

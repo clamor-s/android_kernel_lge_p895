@@ -327,6 +327,13 @@ static void ssd2825_bridge_enable_spi_pins_to_nomal(void)
 {
 	int i;
 
+	if (!rgb_bridge_gpio_init && ARRAY_SIZE(rgb_bridge_gpios_for_spi) > 0) {
+		for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios_for_spi); i++)
+			gpio_request(rgb_bridge_gpios_for_spi[i].gpio,
+						 rgb_bridge_gpios_for_spi[i].name);
+		rgb_bridge_gpio_init = 1;
+	}
+
 	for (i = 0; i < ARRAY_SIZE(rgb_bridge_gpios_for_spi); i++) {
 		tegra_pinmux_set_tristate(
 			gpio_to_pingroup[rgb_bridge_gpios_for_spi[i].gpio],
@@ -360,7 +367,6 @@ int ssd2825_bridge_enable(void)
 	int cnt, ret;
 	spi_data *sequence;
 	int total_cnt = 0;
-	u16 readdata;
 
 	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 
@@ -379,6 +385,14 @@ int ssd2825_bridge_enable(void)
 	mdelay(5);
 	gpio_set_value(gpio_bridge_reset_n, 1);
 
+	mdelay(5);
+
+	if (first_clk_disable_before_suspend == 1) {
+		first_clk_disable_before_suspend = 0;
+		tegra_set_clk_out_parent(true);
+	} else
+		clk_enable(clk_s3);
+
 	/* Panel pre enable*/
 	gpio_set_value(gpio_lcd_en, 1);
 	mdelay(2);
@@ -389,9 +403,6 @@ int ssd2825_bridge_enable(void)
 	gpio_set_value(gpio_lcd_reset_n, 0);
 	mdelay(1);
 	gpio_set_value(gpio_lcd_reset_n, 1);
-	mdelay(5);
-
-	clk_enable(clk_s3);
 
 	/* LCD_RESET_N */
 	tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_PULL_UP);
@@ -417,16 +428,6 @@ int ssd2825_bridge_enable(void)
 
 		sequence++;
 	}
-
-	/* add an dump to check if r/w work */
-	ssd2825_write_raw(SSD2825_SPI_READ_REG);
-	ssd2825_write_raw(0x01FA);
-	ssd2825_write_raw(0x0100);
-
-	ssd2825_write_raw(SSD2825_CONFIGURATION_REG);
-	ssd2825_read_raw(0x00FA, &readdata);
-
-	pr_info("ssd2825_bridge_enable: SSD2825_CONFIGURATION_REG must be 0x0349 --- 0x%x \n", readdata);
 
 	/* Backlight call from panel part */
 	ret = lm353x_bl_on();
@@ -673,9 +674,10 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 	gpio_direction_output(gpio_lcd_reset_n, 1);
 	tegra_gpio_enable(gpio_lcd_reset_n);
 
-	x3_bridge_on = TRUE;
-
+//	x3_bridge_on = TRUE;
 	bridge_spi = spi;
+
+	ssd2825_bridge_enable();
 
 	ssd2825_bridge_early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB-10;
 	ssd2825_bridge_early_suspend.suspend = ssd2825_bridge_spi_suspend;
