@@ -43,7 +43,7 @@ typedef struct lcd_reg_cmd lcd_reg_set;
 
 #if defined(CONFIG_SPI_SOLOMON_BRIDGE)
 typedef struct spi_cmd_data16 spi_data;
-#define SPI_WRITE(value) spi_write9(value);
+#define SPI_WRITE(value) ssd2825_write_raw(value);
 #endif
 
 #define SEQUENCE_SIZE(array) sizeof(array)/sizeof(spi_data)
@@ -71,6 +71,7 @@ static int ssd2825_shutdown = FALSE;
 
 extern struct device* lm3533_bl_dev(void);
 extern int lm3533_is_ready(void);
+extern int lm3533_bl_on_off(struct device *dev, int on_off);
 
 #ifdef CONFIG_ESD_REG_CHECK
 struct work_register {
@@ -82,7 +83,6 @@ static int ssd2825_bridge_spi_read2(u8 value);
 #endif
 
 struct lcd_gamma_rgb cmdlineRGBvalue;
-
 static int __init dc_get_gamma_cmdline(char *str)
 {
 	int output[3] = {0,};
@@ -97,14 +97,14 @@ static int __init dc_get_gamma_cmdline(char *str)
 		((output[0]==0xFF) && (output[1]==0xFF) && (output[2]==0xFF))) {
 		cmdlineRGBvalue.table_type = GAMMA_NV_DISABLED;
 	} else if(((output[0]>255) || (output[1]>255) || (output[2]>255)) ||
-		 ((output[0]<0) || (output[1]<0) || (output[2]<0))) {
+		((output[0]<0) || (output[1]<0) || (output[2]<0))) {
 		cmdlineRGBvalue.table_type = GAMMA_NV_DISABLED;
 	} else {
 		cmdlineRGBvalue.table_type = GAMMA_NV_ENABLED;
 	}
 
 	printk(" %s R:%d,G:%d,B:%d,table_type:%d \n",__func__,
-		output[0],output[1],output[2],cmdlineRGBvalue.table_type);
+			output[0],output[1],output[2],cmdlineRGBvalue.table_type);
 	return 1;
 }
 __setup("RGB=", dc_get_gamma_cmdline);
@@ -166,7 +166,7 @@ static void tegra_set_clk_out_parent(int enable)
 		__func__, ret1, ret2, ret3, ret4, enable);
 }
 
-static int spi_write9(u16 value)
+static int ssd2825_write_raw(u16 value)
 {
 	struct spi_message msg;
 	struct spi_transfer xfer;
@@ -192,7 +192,7 @@ static int spi_write9(u16 value)
 	return ret;
 }
 
-static int spi_read_bytes(u8 value, u16 *data)
+static int ssd2825_read_raw(u8 value, u16 *data)
 {
 	struct spi_message  msg;
 	struct spi_transfer xfer[2];	
@@ -220,13 +220,14 @@ static int spi_read_bytes(u8 value, u16 *data)
 
 	ret = spi_sync(bridge_spi, &msg);
 	if (ret)
-		dev_err(&bridge_spi->dev, "spi_sync_read failed %d\n", rc);
+		dev_err(&bridge_spi->dev, "spi_sync_read failed %d\n", ret);
 
 	rxtmp0 = (u16) rx_buf[0];
 	rxtmp1 = (u16) rx_buf[1];
-	*data = ( rxtmp1 | (rxtmp0 << 8) );
 
-	return rc;
+	*data = (rxtmp1 | (rxtmp0 << 8));
+
+	return ret;
 }
 
 #ifdef CONFIG_ESD_REG_CHECK
@@ -236,24 +237,27 @@ static void reg_check(struct work_struct *work)
 	u16 readdata1, readdata2;
 	u8 data1, data2;
 
-	if(!ssd2825_shutdown){
-		if(x3_bridge_on && ssd2825_disable_end){
-			readdata1 = ssd2825_bridge_spi_read2(0xB7);
-			readdata2 = ssd2825_bridge_lcd_reg_read_esd();
+	if (ssd2825_shutdown)
+		return;
 
-			data1 = (u8)(readdata1 & 0x00FF);
-			data2 = (u8)(readdata2 & 0x00FF);
+	if (x3_bridge_on && ssd2825_disable_end) {
+		readdata1 = ssd2825_bridge_spi_read2(0xB7);
+		readdata2 = ssd2825_bridge_lcd_reg_read_esd();
 
-			if ((lm3533_is_ready() && (!((data1==0xC9) || (data1==0x49) || (data1==0x9)))) || (data2 != 0x1C)) {
-				printk(KERN_INFO "[ssd2825]register check 0xB7:0x%x , 0x0A:0x%x \n", data1, data2);
-				printk(KERN_INFO "[ssd2825]re-initalize register");
+		data1 = (u8)(readdata1 & 0x00FF);
+		data2 = (u8)(readdata2 & 0x00FF);
 
-				ssd2825_bridge_disable();
-				mdelay(100);
-				ssd2825_bridge_enable();
+		if ((lm3533_is_ready() &&
+			(!((data1 == 0xC9) || (data1 == 0x49) ||
+			(data1 == 0x9)))) || (data2 != 0x1C)) {
+			printk(KERN_INFO "[ssd2825]register check 0xB7:0x%x , 0x0A:0x%x \n", data1, data2);
+			printk(KERN_INFO "[ssd2825]re-initalize register");
 
-				schedule_delayed_work(&work_instance->work_reg_check, ESD_REG_CHECK);
-			}
+			ssd2825_bridge_disable();
+			mdelay(100);
+			ssd2825_bridge_enable();
+
+			schedule_delayed_work(&work_instance->work_reg_check, ESD_REG_CHECK);
 		}
 	}
 }
@@ -266,12 +270,12 @@ static int ssd2825_bridge_spi_read2(u8 value)
 
 	regcmd = (0x00FF & value);
 
-	spi_write9(0x00D4);
-	spi_write9(0x01FA);
-	spi_write9(0x0100);
-	spi_write9(regcmd);
+	ssd2825_write_raw(SSD2825_SPI_READ_REG);
+	ssd2825_write_raw(0x01FA);
+	ssd2825_write_raw(0x0100);
+	ssd2825_write_raw(regcmd);
 
-	spi_read_bytes(0xFA, &readdata1);
+	ssd2825_read_raw(0xFA, &readdata1);
 
 	return readdata1;
 }
@@ -289,18 +293,18 @@ static int ssd2825_bridge_lcd_reg_read_esd(void)
 		sequence4_1++;
 	}
 
-	spi_write9(0x010A);
-	spi_write9(0x0100);
+	ssd2825_write_raw(0x010A);
+	ssd2825_write_raw(0x0100);
 
 	mdelay(20);
 
-	spi_write9(0x00C6);
-	spi_read_bytes(0xFA, &readdata1);
+	ssd2825_write_raw(SSD2825_INTERRUPT_STATUS_REG);
+	ssd2825_read_raw(0xFA, &readdata1);
 
 	mdelay(10);
 
-	spi_write9(0x00FF);
-	spi_read_bytes(0xFA, &readdata1);
+	ssd2825_write_raw(SSD2825_READ_REG);
+	ssd2825_read_raw(0xFA, &readdata1);
 
 	return readdata1;
 }
@@ -356,6 +360,7 @@ int ssd2825_bridge_enable(void)
 	int cnt, ret;
 	spi_data *sequence;
 	int total_cnt = 0;
+	u16 readdata;
 
 	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 
@@ -413,9 +418,19 @@ int ssd2825_bridge_enable(void)
 		sequence++;
 	}
 
+	/* add an dump to check if r/w work */
+	ssd2825_write_raw(SSD2825_SPI_READ_REG);
+	ssd2825_write_raw(0x01FA);
+	ssd2825_write_raw(0x0100);
+
+	ssd2825_write_raw(SSD2825_CONFIGURATION_REG);
+	ssd2825_read_raw(0x00FA, &readdata);
+
+	pr_info("ssd2825_bridge_enable: SSD2825_CONFIGURATION_REG must be 0x0349 --- 0x%x \n", readdata);
+
 	/* Backlight call from panel part */
 	ret = lm353x_bl_on();
-	if (ret==2)
+	if (ret == 2)
 		printk(KERN_INFO "lm353x_bl_on success *** state: 0 -> 1 \n");
 
 	x3_bridge_on = TRUE;
@@ -521,15 +536,10 @@ static void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 
 static void ssd2825_bridge_spi_shutdown(struct spi_device *spi)
 {
-	int ret;
-
 	printk(KERN_INFO "%s \n", __func__);
 
 	ssd2825_disable_end = FALSE;
 
-//	This is present in bridge disable
-//	ret = lm353x_bl_off();
-//	printk(KERN_INFO "lm353x_bl_off *** state: %d -> 0 \n", ret);
 #ifdef CONFIG_ESD_REG_CHECK
 	cancel_delayed_work_sync(&work_instance->work_reg_check);
 #endif
@@ -575,7 +585,7 @@ static struct notifier_block ssd2825_bridge_reboot_nb = {
 static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 {
 	struct bridge_platform_data *pdata;
-	int ret, err;
+	int ret;
 	pdata = spi->dev.platform_data;
 
 	if (!pdata) {
@@ -709,7 +719,7 @@ static void __exit ssd2825_bridge_exit(void)
 {
 	spi_unregister_driver(&ssd2825_bridge_spi_driver);
 }
-subsys_initcall(ssd2825_bridge_init);// chages for early probe
+subsys_initcall(ssd2825_bridge_init);
 module_exit(ssd2825_bridge_exit);
 
 MODULE_DESCRIPTION("LCD Driver");
