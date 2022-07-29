@@ -361,6 +361,7 @@ int ssd2825_bridge_enable(void)
 	int cnt, ret;
 	spi_data *sequence1, *sequence2;
 	int total_cnt = 0;
+	u16 readdata1;
 
 	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 
@@ -398,9 +399,6 @@ int ssd2825_bridge_enable(void)
 	mdelay(1);
 	gpio_set_value(gpio_lcd_reset_n, 1);
 
-	/* LCD_RESET_N */
-	tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_PULL_UP);
-
 	/* Init Sequence for bridge */
 	total_cnt = SEQUENCE_SIZE(solomon_bridge_init_sequence);
 	sequence1 = solomon_bridge_init_sequence;
@@ -409,6 +407,14 @@ int ssd2825_bridge_enable(void)
 
 		sequence1++;
 	}
+
+	// read reg
+	ssd2825_write_raw(SSD2825_SPI_READ_REG);
+	ssd2825_write_raw(0x01FA);
+	ssd2825_write_raw(0x0100);
+	ssd2825_write_raw(SSD2825_DELAY_ADJ_REG_1);
+	ssd2825_read_raw(0xFA, &readdata1);
+	pr_info("[ssd2825] SSD2825_DELAY_ADJ_REG_1 is 0x%x \n", readdata1);
 
 	mdelay(10);
 
@@ -486,8 +492,6 @@ int ssd2825_bridge_disable(void)
 #endif
 	mdelay(2);
 	gpio_set_value(gpio_lcd_en, 0);
-
-	tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_NORMAL);
 
 	/* Bridge post disable */
 	if (first_clk_disable_before_suspend == 1) {
