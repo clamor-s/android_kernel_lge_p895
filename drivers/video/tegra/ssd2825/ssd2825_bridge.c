@@ -28,7 +28,6 @@
 
 #if defined(CONFIG_MACH_VU10)
 #include "solomon_spi_table_vu10.h"
-#include "../../../../arch/arm/mach-tegra/lge/x3/include/lge/board-x3.h"
 #else
 #include "solomon_spi_table.h"
 #endif
@@ -41,10 +40,8 @@
 typedef struct lcd_reg_cmd lcd_reg_set;
 #endif
 
-#if defined(CONFIG_SPI_SOLOMON_BRIDGE)
 typedef struct spi_cmd_data16 spi_data;
 #define SPI_WRITE(value) ssd2825_write_raw(value);
-#endif
 
 #define SEQUENCE_SIZE(array) sizeof(array)/sizeof(spi_data)
 
@@ -293,9 +290,6 @@ static int ssd2825_bridge_lcd_reg_read_esd(void)
 		sequence4_1++;
 	}
 
-	ssd2825_write_raw(0x010A);
-	ssd2825_write_raw(0x0100);
-
 	mdelay(20);
 
 	ssd2825_write_raw(SSD2825_INTERRUPT_STATUS_REG);
@@ -365,7 +359,7 @@ static void ssd2825_bridge_disable_spi_pins_to_tristate(void)
 int ssd2825_bridge_enable(void)
 {
 	int cnt, ret;
-	spi_data *sequence;
+	spi_data *sequence1, *sequence2;
 	int total_cnt = 0;
 
 	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
@@ -409,24 +403,24 @@ int ssd2825_bridge_enable(void)
 
 	/* Init Sequence for bridge */
 	total_cnt = SEQUENCE_SIZE(solomon_bridge_init_sequence);
-	sequence = solomon_bridge_init_sequence;
+	sequence1 = solomon_bridge_init_sequence;
 	for (cnt = 0; cnt < total_cnt; cnt++) {
-		SPI_WRITE(sequence->value)
-		if (sequence->delay)
-			mdelay(sequence->delay);
+		SPI_WRITE(sequence1->value)
 
-		sequence++;
+		sequence1++;
 	}
+
+	mdelay(10);
 
 	/* Init Sequence for panel */
 	total_cnt = SEQUENCE_SIZE(solomon_dsi_panel_init_sequence);
-	sequence = solomon_dsi_panel_init_sequence;
+	sequence2 = solomon_dsi_panel_init_sequence;
 	for (cnt = 0; cnt < total_cnt; cnt++) {
-		SPI_WRITE(sequence->value)
-		if (sequence->delay)
-			mdelay(sequence->delay);
+		SPI_WRITE(sequence2->value)
+		if (sequence2->delay)
+			mdelay(sequence2->delay);
 
-		sequence++;
+		sequence2++;
 	}
 
 	/* Backlight call from panel part */
@@ -469,6 +463,8 @@ int ssd2825_bridge_disable(void)
 		sequence++;
 	}
 
+	mdelay(100);
+
 	/* Exit Sequence for bridge */
 	total_cnt = SEQUENCE_SIZE(solomon_bridge_power_off_sequence);
 	sequence = solomon_bridge_power_off_sequence;
@@ -493,13 +489,13 @@ int ssd2825_bridge_disable(void)
 
 	tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_LCD_CS1_N, TEGRA_PUPD_NORMAL);
 
+	/* Bridge post disable */
 	if (first_clk_disable_before_suspend == 1) {
 		first_clk_disable_before_suspend = 0;
 		tegra_set_clk_out_parent(false);
 	} else
 		clk_disable(clk_s3);
 
-	/* Bridge post disable */
 	gpio_set_value(gpio_bridge_reset_n, 0);
 	mdelay(5);
 	gpio_set_value(gpio_bridge_en, 0);
@@ -655,6 +651,7 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 		goto gpio_lcd_en_error;
 	}
 #endif
+
 	/* Bridge gpio setup */
 	gpio_direction_output(gpio_bridge_en, 1);
 	tegra_gpio_enable(gpio_bridge_en);

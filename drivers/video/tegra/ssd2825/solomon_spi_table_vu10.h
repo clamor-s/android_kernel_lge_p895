@@ -47,11 +47,7 @@ struct spi_cmd_data16 solomon_bridge_init_sequence[] = {
 		{0, SSD2825_RGB_INTERFACE_CTRL_REG_3}, {0, 0x0174}, {0, 0x0118},
 		{0, SSD2825_RGB_INTERFACE_CTRL_REG_4}, {0, 0x0100}, {0, 0x0103},
 		{0, SSD2825_RGB_INTERFACE_CTRL_REG_5}, {0, 0x0100}, {0, 0x0104},
-#ifdef MIPI_NON_BURST_MODE
 		{0, SSD2825_RGB_INTERFACE_CTRL_REG_6}, {0, 0x0107}, {0, 0x0100},
-#else
-		{0, SSD2825_RGB_INTERFACE_CTRL_REG_6}, {0, 0x010B}, {0, 0x0100},
-#endif
 		{0, SSD2825_LANE_CONFIGURATION_REG}, {0, 0x0103}, {0, 0x0100},
 		{0, SSD2825_TEST_REG}, {0, 0x0104}, {0, 0x0100},
 
@@ -61,7 +57,6 @@ struct spi_cmd_data16 solomon_bridge_init_sequence[] = {
 		{0, SSD2825_PLL_CONFIGURATION_REG}, {0, 0x01D7}, {0, 0x018C},
 		{0, SSD2825_CLOCK_CTRL_REG}, {0, 0x0109}, {0, 0x0100},
 		{0, SSD2825_PLL_CTRL_REG}, {0, 0x0101}, {0, 0x0100},
-		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {10, 0x0100},
 
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x0142}, {0, 0x0103},
 		{0, SSD2825_VC_CTRL_REG}, {0, 0x0100}, {0, 0x0100},
@@ -188,7 +183,7 @@ static struct spi_cmd_data16 solomon_dsi_panel_power_off_sequence[] = {
 		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0128}, {0, 0x0100},
 
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0102}, {0, 0x0100},
-		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0110}, {100, 0x0100},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x0110}, {0, 0x0100},
 };
 
 static struct spi_cmd_data16 solomon_bridge_power_off_sequence[] = {
@@ -203,6 +198,6 @@ struct spi_cmd_data16 solomon_reg_read_set4_1[] = {
 		{0, SSD2825_CONFIGURATION_REG}, {0, 0x01C9}, {0, 0x0103},
 		/*********/
 		{0, SSD2825_PACKET_SIZE_CTRL_REG_1}, {0, 0x0101}, {0, 0x0100},
-		{0, SSD2825_PACKET_DROP_REG},
+		{0, SSD2825_PACKET_DROP_REG}, {0, 0x010A}, {0, 0x0100},
 };
 #endif // _SPI_SOLOMON_TABLE_H_
