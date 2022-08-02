@@ -1569,19 +1569,17 @@ struct cfg80211_ops {
 					struct net_device *netdev,
 					u8 key_index);
 
-#ifndef CONFIG_WIFI_KERNEL_3_4_DISABLE
 	int	(*start_ap)(struct wiphy *wiphy, struct net_device *dev,
 			    struct cfg80211_ap_settings *settings);
 	int	(*change_beacon)(struct wiphy *wiphy, struct net_device *dev,
 				 struct cfg80211_beacon_data *info);
 	int	(*stop_ap)(struct wiphy *wiphy, struct net_device *dev);
-#else
+
 	int	(*add_beacon)(struct wiphy *wiphy, struct net_device *dev,
 			      struct beacon_parameters *info);
 	int	(*set_beacon)(struct wiphy *wiphy, struct net_device *dev,
 			      struct beacon_parameters *info);
 	int	(*del_beacon)(struct wiphy *wiphy, struct net_device *dev);
-#endif
 
 	int	(*add_station)(struct wiphy *wiphy, struct net_device *dev,
 			       u8 *mac, struct station_parameters *params);
