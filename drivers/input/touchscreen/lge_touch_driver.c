@@ -111,7 +111,7 @@ int task_handler(void *pdata)
 
 		finger_data.state = h_finger->check_button(touch->h_touch, &finger_data);
 
-		DEBUG_MSG(B, "[TOUCH] finger_num[%d], state[%d], c_button[%d], p_button[%d]", finger_data.total_num, finger_data.state, finger_data.curr_button, finger_data.prev_button);
+//		DEBUG_MSG(B, "[TOUCH] finger_num[%d], state[%d], c_button[%d], p_button[%d]", finger_data.total_num, finger_data.state, finger_data.curr_button, finger_data.prev_button);
 		
 		if(finger_data.total_num == FINGER_RELEASE){
 			switch(finger_data.state){
