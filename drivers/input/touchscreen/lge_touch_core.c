@@ -1652,11 +1652,11 @@ static void touch_work_func_c(struct work_struct *work)
 		input_mt_sync(ts->input_dev);
 		report_enable = 1;
 
-		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
-			if (ts->ts_data.state != DO_NOT_ANYTHING)
-				TOUCH_INFO_MSG("touch_release : x[%4d] y[%4d]\n",
-						ts->ts_data.prev_data[0].x_position, ts->ts_data.prev_data[0].y_position);
-		}
+//		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
+//			if (ts->ts_data.state != DO_NOT_ANYTHING)
+//				TOUCH_INFO_MSG("touch_release : x[%4d] y[%4d]\n",
+//						ts->ts_data.prev_data[0].x_position, ts->ts_data.prev_data[0].y_position);
+//		}
 
 		ts->ts_data.prev_total_num = 0;
 	} else if (ts->ts_data.total_num <= MAX_FINGER) {

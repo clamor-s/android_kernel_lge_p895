@@ -364,13 +364,13 @@ bool inputDevSendABSMulti(void* h_dev, struct touch_data* data, u8 total_num)
 			input_report_abs(hTouch->input_dev, ABS_MT_TOUCH_MAJOR, data[i].pressure);
 			input_report_abs(hTouch->input_dev, ABS_MT_WIDTH_MAJOR, data[i].width);
 			input_mt_sync(hTouch->input_dev);
-			DEBUG_MSG(M, "[TOUCH] X[%d], Y[%d]\n", (int)data[i].X_position, (int)data[i].Y_position);
+//			DEBUG_MSG(M, "[TOUCH] X[%d], Y[%d]\n", (int)data[i].X_position, (int)data[i].Y_position);
 			check++;
 		}
 	}
 
 	if(!check){
-		DEBUG_MSG(M, "[TOUCH] mt_sync. \n");
+//		DEBUG_MSG(M, "[TOUCH] mt_sync. \n");
 		input_mt_sync(hTouch->input_dev);
 	}
 	
@@ -647,7 +647,7 @@ bool Synaptics_GetData (void* h_dev, struct touch_finger_data* data)
 	u8  index=0;
 	
 	DO_C(i2c_smbus_read_i2c_block_data(hTouch->client, SYNAPTICS_INT_STATUS_REG, sizeof(u8)*4, (u8*)(&ts_reg_data.interrupt_status_reg)) != sizeof(u8)*4, err_Synaptics_GetData);
-	DEBUG_MSG(M, "[TOUCH] i[%d], 0[%d], 1[%d], 2[%d]", (int)ts_reg_data.interrupt_status_reg, (int)ts_reg_data.finger_state_reg[0], (int)ts_reg_data.finger_state_reg[1], (int)ts_reg_data.finger_state_reg[2]);
+//	DEBUG_MSG(M, "[TOUCH] i[%d], 0[%d], 1[%d], 2[%d]", (int)ts_reg_data.interrupt_status_reg, (int)ts_reg_data.finger_state_reg[0], (int)ts_reg_data.finger_state_reg[1], (int)ts_reg_data.finger_state_reg[2]);
 		
 
 	if(ts_reg_data.interrupt_status_reg == SYNAPTICS_INT_ABS0){
@@ -663,7 +663,7 @@ bool Synaptics_GetData (void* h_dev, struct touch_finger_data* data)
 			data->curr_data[index].width	= TS_SNTS_GET_WIDTH(ts_reg_data.fingers_data[index][XY_WIDTH]);
 			data->curr_data[index].pressure	= TS_SNTS_GET_PRESSURE(ts_reg_data.fingers_data[index][PRESSURE]);
 
-			DEBUG_MSG(M, "[TOUCH] X[%d], Y[%d], Press[%d], Width[%d]", (int)data->curr_data[index].X_position, (int)data->curr_data[index].Y_position, (int)data->curr_data[index].width, (int)data->curr_data[index].pressure);
+//			DEBUG_MSG(M, "[TOUCH] X[%d], Y[%d], Press[%d], Width[%d]", (int)data->curr_data[index].X_position, (int)data->curr_data[index].Y_position, (int)data->curr_data[index].width, (int)data->curr_data[index].pressure);
 
 #if defined(TOUCH_GRIP_SUPPRESSION)
 			IGNORE_IF_POSITION_IS_SUPPRESSION_AREA(data->curr_data[index].X_position)

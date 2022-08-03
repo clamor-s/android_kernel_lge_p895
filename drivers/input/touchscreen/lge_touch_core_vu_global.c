@@ -591,15 +591,15 @@ int ghost_finger_solution(struct lge_touch_data *ts)
 				else
 					ts->gf_ctrl.ghost_check_count++;
 
-				if (unlikely(touch_debug_mask & DEBUG_GHOST))
-					TOUCH_INFO_MSG("ghost_stage_1: delta[%d/%d/%d]\n",
-						ghost_sub(ts->gf_ctrl.saved_x, ts->gf_ctrl.saved_last_x),
-						ghost_sub(ts->gf_ctrl.saved_y, ts->gf_ctrl.saved_last_y),
-						ts->gf_ctrl.max_moved);
+//				if (unlikely(touch_debug_mask & DEBUG_GHOST))
+//					TOUCH_INFO_MSG("ghost_stage_1: delta[%d/%d/%d]\n",
+//						ghost_sub(ts->gf_ctrl.saved_x, ts->gf_ctrl.saved_last_x),
+//						ghost_sub(ts->gf_ctrl.saved_y, ts->gf_ctrl.saved_last_y),
+//						ts->gf_ctrl.max_moved);
 			}
 
-			if (unlikely(touch_debug_mask & DEBUG_GHOST || touch_debug_mask & DEBUG_BASE_INFO))
-				TOUCH_INFO_MSG("ghost_stage_1: ghost_check_count+[0x%x]\n", ts->gf_ctrl.ghost_check_count);
+//			if (unlikely(touch_debug_mask & DEBUG_GHOST || touch_debug_mask & DEBUG_BASE_INFO))
+//				TOUCH_INFO_MSG("ghost_stage_1: ghost_check_count+[0x%x]\n", ts->gf_ctrl.ghost_check_count);
 
 			if(ts->gf_ctrl.ghost_check_count >= MAX_GHOST_CHECK_COUNT){
 				ts->gf_ctrl.ghost_check_count = 0;
@@ -608,11 +608,11 @@ int ghost_finger_solution(struct lge_touch_data *ts)
 						return -1;
 				}
 				ts->gf_ctrl.stage &= ~GHOST_STAGE_1;
-				if (unlikely(touch_debug_mask & DEBUG_GHOST|| touch_debug_mask & DEBUG_BASE_INFO))
-					TOUCH_INFO_MSG("ghost_stage_1: cleared[0x%x]\n", ts->gf_ctrl.stage);
+//				if (unlikely(touch_debug_mask & DEBUG_GHOST|| touch_debug_mask & DEBUG_BASE_INFO))
+//					TOUCH_INFO_MSG("ghost_stage_1: cleared[0x%x]\n", ts->gf_ctrl.stage);
 				if(!ts->gf_ctrl.stage){
-					if (unlikely(touch_debug_mask & DEBUG_GHOST))
-						TOUCH_INFO_MSG("ghost_stage_finished. (NON-KEYGUARD)\n");
+//					if (unlikely(touch_debug_mask & DEBUG_GHOST))
+//						TOUCH_INFO_MSG("ghost_stage_finished. (NON-KEYGUARD)\n");
 				}
 			}
 			ts->gf_ctrl.count = 0;
@@ -648,8 +648,8 @@ int ghost_finger_solution(struct lge_touch_data *ts)
 				if(touch_device_func->ic_ctrl(ts->client, IC_CTRL_BASELINE, BASELINE_REBASE) < 0)
 					return -1;
 			}
-			if (unlikely(touch_debug_mask & DEBUG_GHOST))
-				TOUCH_INFO_MSG("ghost_stage_2: multi_finger. return to ghost_stage_1[0x%x]\n", ts->gf_ctrl.stage);
+//			if (unlikely(touch_debug_mask & DEBUG_GHOST))
+//				TOUCH_INFO_MSG("ghost_stage_2: multi_finger. return to ghost_stage_1[0x%x]\n", ts->gf_ctrl.stage);
 		}
 	}
 	else if(ts->gf_ctrl.stage & GHOST_STAGE_3){
@@ -1031,11 +1031,11 @@ static void touch_work_func_a(struct work_struct *work)
 
 			queue_delayed_work(touch_wq, &ts->work_touch_lock, msecs_to_jiffies(200));
 
-			if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
-				if (ts->ts_data.prev_total_num)
-					TOUCH_INFO_MSG("touch_release : x[%4d] y[%4d]\n",
-							ts->ts_data.prev_data[0].x_position, ts->ts_data.prev_data[0].y_position);
-			}
+//			if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
+//				if (ts->ts_data.prev_total_num)
+//					TOUCH_INFO_MSG("touch_release : x[%4d] y[%4d]\n",
+//							ts->ts_data.prev_data[0].x_position, ts->ts_data.prev_data[0].y_position);
+//			}
 
 			ts->ts_data.prev_total_num = 0;
 		} else if (ts->ts_data.total_num <= MAX_FINGER) {
@@ -1055,10 +1055,10 @@ static void touch_work_func_a(struct work_struct *work)
 				memset(&ts->ts_data.prev_button, 0x0, sizeof(ts->ts_data.prev_button));
 			}
 
-			if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
-				if (ts->ts_data.prev_total_num != ts->ts_data.total_num)
-					TOUCH_INFO_MSG("%d finger pressed : x0[%4d] y0[%4d]\n", ts->ts_data.total_num, ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
-			}
+//			if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
+//				if (ts->ts_data.prev_total_num != ts->ts_data.total_num)
+//					TOUCH_INFO_MSG("%d finger pressed : x0[%4d] y0[%4d]\n", ts->ts_data.total_num, ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
+//			}
 
 			ts->ts_data.prev_total_num = ts->ts_data.total_num;
 
@@ -1475,10 +1475,10 @@ abs_report:
 			ts->ts_data.prev_total_num = 0;
 		}
 		else {
-			if (likely(touch_debug_mask & DEBUG_ABS)) {
-				if (ts->ts_data.prev_total_num != i)
-					TOUCH_INFO_MSG("%d finger pressed : x0[%4d] y0[%4d]\n", ts->ts_data.total_num, ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
-			}
+//			if (likely(touch_debug_mask & DEBUG_ABS)) {
+//				if (ts->ts_data.prev_total_num != i)
+//					TOUCH_INFO_MSG("%d finger pressed : x0[%4d] y0[%4d]\n", ts->ts_data.total_num, ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
+//			}
 
 			ts->ts_data.prev_total_num = i;
 		}
@@ -1633,8 +1633,8 @@ static void touch_work_func_c(struct work_struct *work)
 		ts->ts_data.prev_total_num = 0;
 	} else if (ts->ts_data.total_num <= MAX_FINGER) {
 		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
-			if (ts->ts_data.prev_total_num != ts->ts_data.total_num)
-				TOUCH_INFO_MSG("%d finger pressed : x0[%4d] y0[%4d]\n", ts->ts_data.total_num, ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
+//			if (ts->ts_data.prev_total_num != ts->ts_data.total_num)
+//				TOUCH_INFO_MSG("%d finger pressed : x0[%4d] y0[%4d]\n", ts->ts_data.total_num, ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
 		}
 
 		ts->ts_data.prev_total_num = ts->ts_data.total_num;
