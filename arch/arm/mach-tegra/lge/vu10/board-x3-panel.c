@@ -169,27 +169,11 @@ static struct tegra_dc_mode x3_panel_modes[] = {
 	},
 };
 
-static struct tegra_dc_out_pin ssd2825_dc_out_pins[] = {
-{
-		.name	= TEGRA_DC_OUT_PIN_H_SYNC,
-		.pol	= TEGRA_DC_OUT_PIN_POL_LOW,
-	},
-	{
-		.name	= TEGRA_DC_OUT_PIN_V_SYNC,
-		.pol	= TEGRA_DC_OUT_PIN_POL_LOW,
-	},
-	{
-		.name	= TEGRA_DC_OUT_PIN_PIXEL_CLOCK,
-		.pol	= TEGRA_DC_OUT_PIN_POL_LOW,
-	},
-};
-
 static struct tegra_fb_data x3_fb_data = {
     .win        = 0,
     .xres        = 768,
     .yres        = 1024,
-    .bits_per_pixel    = 32, //16,//24,
-    .flags		= TEGRA_FB_FLIP_ON_PROBE,
+    .bits_per_pixel    = 32,
 };
 
 // PC7 : AP_PWR_ON , PO4 : Vol DN, PB6 : HOT Key
@@ -225,9 +209,6 @@ static struct tegra_dc_out x3_disp1_out = {
 
 	.modes	 	= x3_panel_modes,
 	.n_modes 	= ARRAY_SIZE(x3_panel_modes),
-
-	.out_pins	= ssd2825_dc_out_pins,
-	.n_out_pins	= ARRAY_SIZE(ssd2825_dc_out_pins),
 
 	.enable		= x3_panel_enable,
 	.disable	= x3_panel_disable,
