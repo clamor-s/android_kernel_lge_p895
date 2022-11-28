@@ -2216,7 +2216,7 @@ static int uhsic_phy_open(struct tegra_usb_phy *phy)
 		return -EINVAL;
 	}
 
-	uhsic_powerup_pmc_wake_detect(phy);
+//	uhsic_powerup_pmc_wake_detect(phy);
 
 	return 0;
 }
@@ -2226,7 +2226,7 @@ static void uhsic_phy_close(struct tegra_usb_phy *phy)
 	int ret;
 
 	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
-	uhsic_powerdown_pmc_wake_detect(phy);
+//	uhsic_powerdown_pmc_wake_detect(phy);
 
 	ret = hsic_rail_disable(phy);
 	if (ret < 0)
@@ -2242,208 +2242,12 @@ static int uhsic_phy_irq(struct tegra_usb_phy *phy)
 	return IRQ_HANDLED;
 }
 
-static int uhsic_phy_power_on(struct tegra_usb_phy *phy)
-{
-	unsigned long val;
-	void __iomem *base = phy->regs;
-
-	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
-
-	if (phy->phy_clk_on) {
-		DBG("%s(%d) inst:[%d] phy clk is already On\n",
-					__func__, __LINE__, phy->inst);
-		return 0;
-	}
-
-	val = readl(base + UHSIC_PADS_CFG1);
-	val &= ~(UHSIC_PD_BG | UHSIC_PD_TRK | UHSIC_PD_RX |
-			UHSIC_PD_ZI | UHSIC_RPD_DATA | UHSIC_RPD_STROBE);
-	val |= (UHSIC_RX_SEL | UHSIC_PD_TX);
-	writel(val, base + UHSIC_PADS_CFG1);
-
-	val = readl(base + USB_SUSP_CTRL);
-	val |= UHSIC_RESET;
-	writel(val, base + USB_SUSP_CTRL);
-	udelay(1);
-
-	val = readl(base + USB_SUSP_CTRL);
-	val |= UHSIC_PHY_ENABLE;
-	writel(val, base + USB_SUSP_CTRL);
-
-	val = readl(base + UHSIC_HSRX_CFG0);
-	val |= UHSIC_IDLE_WAIT(HSIC_IDLE_WAIT_DELAY);
-	val |= UHSIC_ELASTIC_UNDERRUN_LIMIT(HSIC_ELASTIC_UNDERRUN_LIMIT);
-	val |= UHSIC_ELASTIC_OVERRUN_LIMIT(HSIC_ELASTIC_OVERRUN_LIMIT);
-	writel(val, base + UHSIC_HSRX_CFG0);
-
-	val = readl(base + UHSIC_HSRX_CFG1);
-	val |= UHSIC_HS_SYNC_START_DLY(HSIC_SYNC_START_DELAY);
-	writel(val, base + UHSIC_HSRX_CFG1);
-
-	/* WAR HSIC TX */
-	val = readl(base + UHSIC_TX_CFG0);
-	val &= ~UHSIC_HS_READY_WAIT_FOR_VALID;
-	writel(val, base + UHSIC_TX_CFG0);
-
-	val = readl(base + UHSIC_MISC_CFG0);
-	val |= UHSIC_SUSPEND_EXIT_ON_EDGE;
-	/* Disable generic bus reset, to allow AP30 specific bus reset*/
-	val |= UHSIC_DISABLE_BUSRESET;
-	writel(val, base + UHSIC_MISC_CFG0);
-
-	val = readl(base + UHSIC_MISC_CFG1);
-	val |= UHSIC_PLLU_STABLE_COUNT(phy->freq->stable_count);
-	writel(val, base + UHSIC_MISC_CFG1);
-
-	val = readl(base + UHSIC_PLL_CFG1);
-	val |= UHSIC_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
-	val |= UHSIC_XTAL_FREQ_COUNT(phy->freq->xtal_freq_count);
-	writel(val, base + UHSIC_PLL_CFG1);
-
-	val = readl(base + USB_SUSP_CTRL);
-	val &= ~(UHSIC_RESET);
-	writel(val, base + USB_SUSP_CTRL);
-	udelay(1);
-
-	val = readl(base + UHSIC_PADS_CFG1);
-	val &= ~(UHSIC_PD_TX);
-	writel(val, base + UHSIC_PADS_CFG1);
-
-	val = readl(base + USB_USBMODE);
-	val |= USB_USBMODE_HOST;
-	writel(val, base + USB_USBMODE);
-
-	/* Change the USB controller PHY type to HSIC */
-	val = readl(base + HOSTPC1_DEVLC);
-	val &= ~HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_MASK);
-	val |= HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_HSIC);
-	val &= ~HOSTPC1_DEVLC_STS;
-	writel(val, base + HOSTPC1_DEVLC);
-
-	val = readl(base + USB_TXFILLTUNING);
-	if ((val & USB_FIFO_TXFILL_MASK) != USB_FIFO_TXFILL_THRES(0x10)) {
-		val = USB_FIFO_TXFILL_THRES(0x10);
-		writel(val, base + USB_TXFILLTUNING);
-	}
-
-	val = readl(base + USB_PORTSC);
-	val &= ~(USB_PORTSC_WKOC | USB_PORTSC_WKDS | USB_PORTSC_WKCN);
-	writel(val, base + USB_PORTSC);
-
-	val = readl(base + UHSIC_PADS_CFG0);
-	val &= ~(UHSIC_TX_RTUNEN);
-	/* set Rtune impedance to 50 ohm */
-	val |= UHSIC_TX_RTUNE(8);
-	writel(val, base + UHSIC_PADS_CFG0);
-
-	if (usb_phy_reg_status_wait(base + USB_SUSP_CTRL,
-				USB_PHY_CLK_VALID, USB_PHY_CLK_VALID, 2500)) {
-		pr_err("%s: timeout waiting for phy to stabilize\n", __func__);
-		return -ETIMEDOUT;
-	}
-
-	phy->phy_clk_on = true;
-	phy->hw_accessible = true;
-
-	if (phy->pmc_sleepwalk) {
-		DBG("%s(%d) inst:[%d] restore phy\n", __func__, __LINE__,
-					phy->inst);
-		uhsic_phy_restore_start(phy);
-		usb_phy_bringup_host_controller(phy);
-		uhsic_phy_restore_end(phy);
-		phy->pmc_sleepwalk = false;
-	}
-
-	return 0;
-}
-
-static int uhsic_phy_power_off(struct tegra_usb_phy *phy)
-{
-	unsigned long val;
-	void __iomem *base = phy->regs;
-
-	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
-	if (!phy->phy_clk_on) {
-		DBG("%s(%d) inst:[%d] phy clk is already off\n",
-					__func__, __LINE__, phy->inst);
-		return 0;
-	}
-
-	phy->port_speed = (readl(base + HOSTPC1_DEVLC) >> 25) &
-			HOSTPC1_DEVLC_PSPD_MASK;
-
-	/* Disable interrupts */
-	writel(0, base + USB_USBINTR);
-
-	if (phy->pmc_sleepwalk == false) {
-		uhsic_setup_pmc_wake_detect(phy);
-		phy->pmc_sleepwalk = true;
-	}
-
-	val = readl(base + HOSTPC1_DEVLC);
-	val |= HOSTPC1_DEVLC_PHCD;
-	writel(val, base + HOSTPC1_DEVLC);
-
-	/* Remove power downs for HSIC from PADS CFG1 register */
-	val = readl(base + UHSIC_PADS_CFG1);
-	val |= (UHSIC_PD_BG |UHSIC_PD_TRK | UHSIC_PD_RX |
-			UHSIC_PD_ZI | UHSIC_PD_TX);
-	writel(val, base + UHSIC_PADS_CFG1);
-	phy->phy_clk_on = false;
-	phy->hw_accessible = false;
-
-	return 0;
-}
-
-int uhsic_phy_bus_port_power(struct tegra_usb_phy *phy)
-{
-	unsigned long val;
-	void __iomem *base = phy->regs;
-
-	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
-
-	val = readl(base + USB_USBMODE);
-	val |= USB_USBMODE_HOST;
-	writel(val, base + USB_USBMODE);
-
-	/* Change the USB controller PHY type to HSIC */
-	val = readl(base + HOSTPC1_DEVLC);
-	val &= ~(HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_MASK));
-	val |= HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_HSIC);
-	writel(val, base + HOSTPC1_DEVLC);
-
-	val = readl(base + UHSIC_MISC_CFG0);
-	val |= UHSIC_DETECT_SHORT_CONNECT;
-	writel(val, base + UHSIC_MISC_CFG0);
-	udelay(1);
-
-	val = readl(base + UHSIC_MISC_CFG0);
-	val |= UHSIC_FORCE_XCVR_MODE;
-	writel(val, base + UHSIC_MISC_CFG0);
-
-	val = readl(base + UHSIC_PADS_CFG1);
-	val &= ~UHSIC_RPD_STROBE;
-	writel(val, base + UHSIC_PADS_CFG1);
-
-	if (phy->pdata->ops && phy->pdata->ops->port_power)
-		phy->pdata->ops->port_power();
-
-	if (usb_phy_reg_status_wait(base + UHSIC_STAT_CFG0,
-			UHSIC_CONNECT_DETECT, UHSIC_CONNECT_DETECT, 25000)) {
-		pr_err("%s: timeout waiting for UHSIC_CONNECT_DETECT\n",
-								__func__);
-		return -ETIMEDOUT;
-	}
-
-	return 0;
-}
-
 static int uhsic_phy_bus_reset(struct tegra_usb_phy *phy)
 {
 	unsigned long val;
 	void __iomem *base = phy->regs;
 
-	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
+	pr_info("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
 
 	/* Change the USB controller PHY type to HSIC */
 	val = readl(base + HOSTPC1_DEVLC);
@@ -2518,6 +2322,212 @@ static int uhsic_phy_bus_reset(struct tegra_usb_phy *phy)
 	if (usb_phy_reg_status_wait(base + USB_USBCMD, USB_USBCMD_RS,
 						 USB_USBCMD_RS, 2000)) {
 		pr_err("%s: timeout waiting for USB_USBCMD_RS\n", __func__);
+		return -ETIMEDOUT;
+	}
+
+	return 0;
+}
+
+static int uhsic_phy_power_on(struct tegra_usb_phy *phy)
+{
+	unsigned long val;
+	void __iomem *base = phy->regs;
+
+	pr_info("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
+
+	if (phy->phy_clk_on) {
+		DBG("%s(%d) inst:[%d] phy clk is already On\n",
+					__func__, __LINE__, phy->inst);
+		return 0;
+	}
+
+	val = readl(base + UHSIC_PADS_CFG1);
+	val &= ~(UHSIC_PD_BG | UHSIC_PD_TRK | UHSIC_PD_RX |
+			UHSIC_PD_ZI | UHSIC_RPD_DATA | UHSIC_RPD_STROBE);
+	val |= (UHSIC_RX_SEL | UHSIC_PD_TX);
+	writel(val, base + UHSIC_PADS_CFG1);
+
+	val = readl(base + USB_SUSP_CTRL);
+	val |= UHSIC_RESET;
+	writel(val, base + USB_SUSP_CTRL);
+
+	udelay(1);
+
+	val = readl(base + USB_SUSP_CTRL);
+	val |= UHSIC_PHY_ENABLE;
+	writel(val, base + USB_SUSP_CTRL);
+
+	val = readl(base + UHSIC_HSRX_CFG0);
+	val &= ~(UHSIC_IDLE_WAIT(~0) |
+		 UHSIC_ELASTIC_UNDERRUN_LIMIT(~0) |
+		 UHSIC_ELASTIC_OVERRUN_LIMIT(~0));
+	val |= UHSIC_IDLE_WAIT(HSIC_IDLE_WAIT_DELAY);
+	val |= UHSIC_ELASTIC_UNDERRUN_LIMIT(HSIC_ELASTIC_UNDERRUN_LIMIT);
+	val |= UHSIC_ELASTIC_OVERRUN_LIMIT(HSIC_ELASTIC_OVERRUN_LIMIT);
+	writel(val, base + UHSIC_HSRX_CFG0);
+
+	val = readl(base + UHSIC_HSRX_CFG1);
+	val &= ~UHSIC_HS_SYNC_START_DLY(~0);
+	val |= UHSIC_HS_SYNC_START_DLY(HSIC_SYNC_START_DELAY);
+	writel(val, base + UHSIC_HSRX_CFG1);
+
+	/* WAR HSIC TX */
+	val = readl(base + UHSIC_TX_CFG0);
+	val &= ~UHSIC_HS_READY_WAIT_FOR_VALID;
+	writel(val, base + UHSIC_TX_CFG0);
+
+	val = readl(base + UHSIC_MISC_CFG0);
+	val |= UHSIC_SUSPEND_EXIT_ON_EDGE;
+	/* Disable generic bus reset, to allow AP30 specific bus reset*/
+	val |= UHSIC_DISABLE_BUSRESET;
+	writel(val, base + UHSIC_MISC_CFG0);
+
+	val = readl(base + UHSIC_MISC_CFG1);
+	val &= ~UHSIC_PLLU_STABLE_COUNT(~0);
+	val |= UHSIC_PLLU_STABLE_COUNT(phy->freq->stable_count);
+	writel(val, base + UHSIC_MISC_CFG1);
+
+	val = readl(base + UHSIC_PLL_CFG1);
+	val &= ~(UHSIC_XTAL_FREQ_COUNT(~0) |
+		UHSIC_PLLU_ENABLE_DLY_COUNT(~0));
+	val |= UHSIC_PLLU_ENABLE_DLY_COUNT(phy->freq->enable_delay);
+	val |= UHSIC_XTAL_FREQ_COUNT(phy->freq->xtal_freq_count);
+	writel(val, base + UHSIC_PLL_CFG1);
+
+	val = readl(base + USB_SUSP_CTRL);
+	val &= ~(UHSIC_RESET);
+	writel(val, base + USB_SUSP_CTRL);
+
+	udelay(1);
+
+	val = readl(base + UHSIC_PADS_CFG1);
+	val &= ~(UHSIC_PD_TX);
+	writel(val, base + UHSIC_PADS_CFG1);
+
+	val = readl(base + USB_USBMODE);
+	val |= USB_USBMODE_HOST;
+	writel(val, base + USB_USBMODE);
+
+	/* Change the USB controller PHY type to HSIC */
+	val = readl(base + HOSTPC1_DEVLC);
+	val &= ~HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_MASK);
+	val |= HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_HSIC);
+	val &= ~HOSTPC1_DEVLC_STS;
+	writel(val, base + HOSTPC1_DEVLC);
+
+	val = readl(base + USB_TXFILLTUNING);
+	if ((val & USB_FIFO_TXFILL_MASK) != USB_FIFO_TXFILL_THRES(0x10)) {
+		val = USB_FIFO_TXFILL_THRES(0x10);
+		writel(val, base + USB_TXFILLTUNING);
+	}
+
+	val = readl(base + USB_PORTSC);
+	val &= ~(USB_PORTSC_WKOC | USB_PORTSC_WKDS | USB_PORTSC_WKCN);
+	writel(val, base + USB_PORTSC);
+
+	val = readl(base + UHSIC_PADS_CFG0);
+	val &= ~(UHSIC_TX_RTUNEN);
+	/* set Rtune impedance to 50 ohm */
+	val |= UHSIC_TX_RTUNE(8);
+	writel(val, base + UHSIC_PADS_CFG0);
+
+	if (usb_phy_reg_status_wait(base + USB_SUSP_CTRL,
+				USB_PHY_CLK_VALID, USB_PHY_CLK_VALID, 2500)) {
+		pr_err("%s: timeout waiting for phy to stabilize\n", __func__);
+		return -ETIMEDOUT;
+	}
+
+	phy->phy_clk_on = true;
+	phy->hw_accessible = true;
+
+//	if (phy->pmc_sleepwalk) {
+//		DBG("%s(%d) inst:[%d] restore phy\n", __func__, __LINE__,
+//					phy->inst);
+//		uhsic_phy_restore_start(phy);
+//		usb_phy_bringup_host_controller(phy);
+//		uhsic_phy_restore_end(phy);
+//		phy->pmc_sleepwalk = false;
+//	}
+
+	return 0;
+}
+
+static int uhsic_phy_power_off(struct tegra_usb_phy *phy)
+{
+	unsigned long val;
+	void __iomem *base = phy->regs;
+
+	pr_info("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
+	if (!phy->phy_clk_on) {
+		DBG("%s(%d) inst:[%d] phy clk is already off\n",
+					__func__, __LINE__, phy->inst);
+		return 0;
+	}
+
+//	phy->port_speed = (readl(base + HOSTPC1_DEVLC) >> 25) &
+//			HOSTPC1_DEVLC_PSPD_MASK;
+
+	/* Disable interrupts */
+//	writel(0, base + USB_USBINTR);
+
+//	if (phy->pmc_sleepwalk == false) {
+//		uhsic_setup_pmc_wake_detect(phy);
+//		phy->pmc_sleepwalk = true;
+//	}
+
+//	val = readl(base + HOSTPC1_DEVLC);
+//	val |= HOSTPC1_DEVLC_PHCD;
+//	writel(val, base + HOSTPC1_DEVLC);
+
+	/* Remove power downs for HSIC from PADS CFG1 register */
+	val = readl(base + UHSIC_PADS_CFG1);
+	val |= (UHSIC_PD_BG |UHSIC_PD_TRK | UHSIC_PD_RX |
+			UHSIC_PD_ZI | UHSIC_PD_TX);
+	writel(val, base + UHSIC_PADS_CFG1);
+
+	phy->phy_clk_on = false;
+	phy->hw_accessible = false;
+
+	return 0;
+}
+
+int uhsic_phy_bus_port_power(struct tegra_usb_phy *phy)
+{
+	unsigned long val;
+	void __iomem *base = phy->regs;
+
+	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
+
+	val = readl(base + USB_USBMODE);
+	val |= USB_USBMODE_HOST;
+	writel(val, base + USB_USBMODE);
+
+	/* Change the USB controller PHY type to HSIC */
+	val = readl(base + HOSTPC1_DEVLC);
+	val &= ~(HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_MASK));
+	val |= HOSTPC1_DEVLC_PTS(HOSTPC1_DEVLC_PTS_HSIC);
+	writel(val, base + HOSTPC1_DEVLC);
+
+	val = readl(base + UHSIC_MISC_CFG0);
+	val |= UHSIC_DETECT_SHORT_CONNECT;
+	writel(val, base + UHSIC_MISC_CFG0);
+	udelay(1);
+
+	val = readl(base + UHSIC_MISC_CFG0);
+	val |= UHSIC_FORCE_XCVR_MODE;
+	writel(val, base + UHSIC_MISC_CFG0);
+
+	val = readl(base + UHSIC_PADS_CFG1);
+	val &= ~UHSIC_RPD_STROBE;
+	writel(val, base + UHSIC_PADS_CFG1);
+
+//	if (phy->pdata->ops && phy->pdata->ops->port_power)
+//		phy->pdata->ops->port_power();
+
+	if (usb_phy_reg_status_wait(base + UHSIC_STAT_CFG0,
+			UHSIC_CONNECT_DETECT, UHSIC_CONNECT_DETECT, 25000)) {
+		pr_err("%s: timeout waiting for UHSIC_CONNECT_DETECT\n",
+								__func__);
 		return -ETIMEDOUT;
 	}
 
@@ -3008,13 +3018,13 @@ static struct tegra_usb_phy_ops utmi_phy_ops = {
 static struct tegra_usb_phy_ops uhsic_phy_ops = {
 	.open		= uhsic_phy_open,
 	.close		= uhsic_phy_close,
-	.irq		= uhsic_phy_irq,
+//	.irq		= uhsic_phy_irq,
 	.power_on	= uhsic_phy_power_on,
 	.power_off	= uhsic_phy_power_off,
-	.pre_resume = uhsic_phy_pre_resume,
-	.resume = uhsic_phy_resume,
-	.post_resume = uhsic_phy_post_resume,
-	.port_power = uhsic_phy_bus_port_power,
+//	.pre_resume	= uhsic_phy_pre_resume,
+//	.resume		= uhsic_phy_resume,
+//	.post_resume	= uhsic_phy_post_resume,
+//	.port_power	= uhsic_phy_bus_port_power,
 	.bus_reset	= uhsic_phy_bus_reset,
 };
 
