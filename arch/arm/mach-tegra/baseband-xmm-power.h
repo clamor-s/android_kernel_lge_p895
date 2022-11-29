@@ -115,6 +115,6 @@ enum baseband_xmm_powerstate_t {
 	BBXMM_PS_LAST	= -1,
 };
 
-void baseband_xmm_set_power_status(unsigned int status);
+static inline void baseband_xmm_set_power_status(unsigned int status) {};
 
 #endif	//__BASEBAND_XMM_POWER_H__

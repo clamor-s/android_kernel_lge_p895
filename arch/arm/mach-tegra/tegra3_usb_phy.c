@@ -2216,6 +2216,12 @@ static int uhsic_phy_open(struct tegra_usb_phy *phy)
 		return -EINVAL;
 	}
 
+	ret = gpio_request(TEGRA_GPIO_PU5, "HSIC_EN");
+	if (ret < 0)
+		pr_err("failed to request hsic en %d\n", ret);
+
+	tegra_gpio_enable(TEGRA_GPIO_PU5);
+
 //	uhsic_powerup_pmc_wake_detect(phy);
 
 	return 0;
@@ -2231,6 +2237,8 @@ static void uhsic_phy_close(struct tegra_usb_phy *phy)
 	ret = hsic_rail_disable(phy);
 	if (ret < 0)
 		pr_err("%s avdd_hsic could not be disabled\n", __func__);
+
+	gpio_free(TEGRA_GPIO_PU5);
 }
 
 static int uhsic_phy_irq(struct tegra_usb_phy *phy)
@@ -2340,6 +2348,9 @@ static int uhsic_phy_power_on(struct tegra_usb_phy *phy)
 					__func__, __LINE__, phy->inst);
 		return 0;
 	}
+
+	// enable hsic gpio
+	gpio_direction_output(TEGRA_GPIO_PU5, 1);
 
 	val = readl(base + UHSIC_PADS_CFG1);
 	val &= ~(UHSIC_PD_BG | UHSIC_PD_TRK | UHSIC_PD_RX |
@@ -2484,6 +2495,9 @@ static int uhsic_phy_power_off(struct tegra_usb_phy *phy)
 	val |= (UHSIC_PD_BG |UHSIC_PD_TRK | UHSIC_PD_RX |
 			UHSIC_PD_ZI | UHSIC_PD_TX);
 	writel(val, base + UHSIC_PADS_CFG1);
+
+	// disable hsic gpio
+	gpio_direction_output(TEGRA_GPIO_PU5, 0);
 
 	phy->phy_clk_on = false;
 	phy->hw_accessible = false;

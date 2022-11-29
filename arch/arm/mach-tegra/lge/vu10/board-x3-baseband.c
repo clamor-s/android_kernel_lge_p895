@@ -60,9 +60,7 @@ struct baseband_power_platform_data tegra_baseband_power_data = {
 			.bb_rst = XMM6260_GPIO_BB_RST,                
 			.bb_on = XMM6260_GPIO_BB_ON,                    
 			.ipc_bb_wake = XMM6260_GPIO_IPC_BB_WAKE, 
-			.ipc_ap_wake = XMM6260_GPIO_IPC_AP_WAKE,          
-			.ipc_hsic_active = XMM6260_GPIO_IPC_HSIC_ACTIVE,     
-			.ipc_hsic_sus_req = XMM6260_GPIO_IPC_HSIC_SUS_REQ,    
+			.ipc_ap_wake = XMM6260_GPIO_IPC_AP_WAKE,   
 			.hsic_device = &tegra_ehci2_device,                   
 		},                                                       
 	},                                                               
@@ -110,7 +108,7 @@ static int x3_usb_hsic_postsuspend(void)
 {
 	printk("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
-	baseband_xmm_set_power_status(BBXMM_PS_L2);
+//	baseband_xmm_set_power_status(BBXMM_PS_L2);
 #endif
 	return 0;
 }
@@ -120,7 +118,7 @@ static int x3_usb_hsic_preresume(void)
 {
 	printk("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
-	baseband_xmm_set_power_status(BBXMM_PS_L2TOL0);
+//	baseband_xmm_set_power_status(BBXMM_PS_L2TOL0);
 #endif
 	return 0;
 }
@@ -129,7 +127,7 @@ static int x3_usb_hsic_phy_ready(void)
 {
 	printk("%s\n", __func__);
 #if defined(CONFIG_TEGRA_BB_XMM_POWER)
-	baseband_xmm_set_power_status(BBXMM_PS_L0);
+//	baseband_xmm_set_power_status(BBXMM_PS_L0);
 #endif
 	return 0;
 }
@@ -138,7 +136,7 @@ static int x3_usb_hsic_phy_off(void)
 {
 	printk("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
-	baseband_xmm_set_power_status(BBXMM_PS_L3);
+//	baseband_xmm_set_power_status(BBXMM_PS_L3);
 #endif
 	return 0;
 }
@@ -192,9 +190,7 @@ static int __init tegra_uhsic_init(void)
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.bb_rst);  
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.bb_on);	   
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_bb_wake); 
-	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_ap_wake); 
-	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_hsic_active);
-	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_hsic_sus_req);
+	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_ap_wake);
 
 	tegra_baseband_power_data.hsic_register =
 					&tegra_usb_hsic_host_register;

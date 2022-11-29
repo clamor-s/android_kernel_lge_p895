@@ -14,8 +14,6 @@
  *
  */
 
-//#define DEBUG
-
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -73,8 +71,6 @@ static struct gpio tegra_baseband_gpios[] = {
 	{ -1, GPIOF_OUT_INIT_LOW,  "BB_ON"   },
 	{ -1, GPIOF_OUT_INIT_LOW,  "IPC_BB_WAKE" },
 	{ -1, GPIOF_IN,            "IPC_AP_WAKE" },
-	{ -1, GPIOF_OUT_INIT_HIGH, "IPC_HSIC_ACTIVE" },
-	{ -1, GPIOF_IN,            "IPC_HSIC_SUS_REQ" },
 };
 
 static enum {
@@ -86,41 +82,11 @@ static enum {
 	IPC_AP_WAKE_H,
 } ipc_ap_wake_state;
 
-enum baseband_xmm_powerstate_t baseband_xmm_powerstate;
 static struct workqueue_struct *workqueue;
 static struct work_struct init1_work;
 static struct baseband_power_platform_data *baseband_power_driver_data;
 static bool register_hsic_device;
 static int enum_repeat = ENUM_REPEAT_TRY_CNT;
-
-void baseband_xmm_set_power_status(unsigned int status)
-{
-	struct baseband_power_platform_data *data = baseband_power_driver_data;
-
-	pr_info("%s n(%d),o(%d)\n", __func__, status, baseband_xmm_powerstate );
-
-	if (baseband_xmm_powerstate == status)
-		return;
-
-	switch (status) {
-	case BBXMM_PS_L0:
-		pr_info("PM_ST : L0\n");
-		baseband_xmm_powerstate = status;
-
-		gpio_set_value(data->modem.xmm.ipc_hsic_active, 1);
-		pr_info("GPIO [W]: L0 Host_active -> 1 \n");
-
-		pr_info("gpio host active high->\n");
-		break;
-
-	default:
-		baseband_xmm_powerstate = status;
-		break;
-	}
-
-	pr_info("BB XMM POWER STATE = %s(%d)\n", pwrstate_cmt[status], status);
-}
-EXPORT_SYMBOL_GPL(baseband_xmm_set_power_status);
 
 static irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 {
@@ -147,18 +113,9 @@ static irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 	} else {
 		if (!value) {
 			pr_info("%s - falling\n", __func__);
-			/* First check it a CP ack or CP wake  */
 			ipc_ap_wake_state = IPC_AP_WAKE_L;
 		} else {
 			pr_info("%s - rising\n", __func__);
-			value = gpio_get_value(data->modem.xmm.ipc_bb_wake);
-			if (value) {
-				/* Clear the slave wakeup request */
-				gpio_set_value(data->modem.xmm.ipc_bb_wake, 0);
-				pr_info("GPIO [W]: Slave_wake -> 0 \n"); 
-			}
-
-			gpio_set_value(data->modem.xmm.ipc_hsic_active, 1);
 			ipc_ap_wake_state = IPC_AP_WAKE_H;
 		}
 	}
@@ -233,11 +190,6 @@ static void baseband_xmm_power_flash_pm_ver_ge_1145_recovery(void)
 	
 		/* wait X ms */
 		msleep(500);
-
-		/* set IPC_HSIC_ACTIVE low */
-		gpio_set_value(baseband_power_driver_data->modem.xmm.ipc_hsic_active, 0);
-
-		pr_info("GPIO [W]: Host_active -> 0 \n"); 
 	}
 }
 
@@ -263,11 +215,6 @@ static void baseband_xmm_power(void)
 {
 	pr_info("%s\n", __func__);
 
-	gpio_set_value(baseband_power_driver_data->
-			modem.xmm.ipc_hsic_active, 1);
-
-	pr_info("GPIO [W]: Host_active -> 1 \n"); 
-			
 	/* reset / power on sequence */
 	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 0);
 	mdelay(50);
@@ -279,10 +226,6 @@ static void baseband_xmm_power(void)
 	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 1);
 	udelay(60);
 	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 0);
-
-	gpio_set_value(baseband_power_driver_data->
-			modem.xmm.ipc_hsic_active, 0);			
-	pr_info("%s: ver > 1145:" "GPIO [W]: Host_active -> 0 \n",__func__); 
 }
 
 static int baseband_xmm_power_driver_probe(struct platform_device *device)
@@ -313,8 +256,6 @@ static int baseband_xmm_power_driver_probe(struct platform_device *device)
 	tegra_baseband_gpios[1].gpio = baseband_power_driver_data->modem.xmm.bb_on;
 	tegra_baseband_gpios[2].gpio = baseband_power_driver_data->modem.xmm.ipc_bb_wake;
 	tegra_baseband_gpios[3].gpio = baseband_power_driver_data->modem.xmm.ipc_ap_wake;
-	tegra_baseband_gpios[4].gpio = baseband_power_driver_data->modem.xmm.ipc_hsic_active;
-	tegra_baseband_gpios[5].gpio = baseband_power_driver_data->modem.xmm.ipc_hsic_sus_req;
 
 	err = gpio_request_array(tegra_baseband_gpios, ARRAY_SIZE(tegra_baseband_gpios));
 	if (err < 0) {
@@ -354,7 +295,6 @@ static int baseband_xmm_power_driver_probe(struct platform_device *device)
 
 	/* init state variables */
 	register_hsic_device = true;
-	baseband_xmm_powerstate = BBXMM_PS_UNINIT;
 
 	pr_info("%s }\n", __func__);
 
