@@ -54,7 +54,6 @@ unsigned long modem_pm = 1;
 EXPORT_SYMBOL(modem_pm);
 
 unsigned long enum_delay_ms = 1000; /* ignored if !modem_flash */
-
 bool enum_success = false;
 
 const char *pwrstate_cmt[] = {
@@ -87,8 +86,6 @@ static enum {
 	IPC_AP_WAKE_H,
 } ipc_ap_wake_state;
 
-static bool short_autosuspend = false;
-
 enum baseband_xmm_powerstate_t baseband_xmm_powerstate;
 static struct workqueue_struct *workqueue;
 static struct work_struct init1_work;
@@ -96,59 +93,14 @@ static struct baseband_power_platform_data *baseband_power_driver_data;
 static bool register_hsic_device;
 static struct wake_lock wakelock;
 static struct usb_device *usbdev;
-static bool CP_initiated_L2toL0;
-static bool modem_power_on;
-static int power_onoff;
 //To_Ril-recovery Nvidia_Patch_20111226 [Start]
 static int enum_repeat = ENUM_REPEAT_TRY_CNT;
 //To_Ril-recovery Nvidia_Patch_20111226 [End]
 
-/* 20120112 - Nvidia Bug [924425] - L2 Auto Suspend fixed #1 [Start] */
-static int reenable_autosuspend;
-/* 20120112 - Nvidia Bug [924425] - L2 Auto Suspend fixed #1 [End] */
-static bool wakeup_pending;
-static bool modem_sleep_flag;
 static spinlock_t xmm_lock;
-static DEFINE_MUTEX(xmm_onoff_mutex);
 
 //Move place To_Ril-recovery Nvidia_Patch_20111226
 static struct baseband_xmm_power_work_t *baseband_xmm_power_work;
-static bool system_suspending;
-
-static inline void baseband_xmm_power_msleep(u32 t)
-{
-	/*
-	If timer value is between ( 10us - 20ms),
-	usleep_range() is recommended.
-	Please read Documentation/timers/timers-howto.txt.
-	*/
-	usleep_range(t*1000, t*1000 + 500);
-}
-
-static int baseband_modem_power_on(struct baseband_power_platform_data *data)
-{
-	pr_info("!! %s !! \n", __func__ );
-
-	/* set IPC_HSIC_ACTIVE active */
-	gpio_set_value(baseband_power_driver_data->
-		modem.xmm.ipc_hsic_active, 1);
-
-	pr_info("GPIO [W]: Host_active -> 1 \n"); 
-
-	/* reset / power on sequence */
-	gpio_set_value(data->modem.xmm.bb_on, 0);
-	mdelay(50);
-	gpio_set_value(data->modem.xmm.bb_rst, 0);
-	mdelay(200);
-	gpio_set_value(data->modem.xmm.bb_rst, 1);	
-	mdelay(50);
-
-	gpio_set_value(data->modem.xmm.bb_on, 1);
-	udelay(60);
-	gpio_set_value(data->modem.xmm.bb_on, 0);
-
-	return 0;
-}
 
 void baseband_xmm_set_power_status(unsigned int status)
 {
@@ -196,8 +148,6 @@ static irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 			ipc_ap_wake_state = IPC_AP_WAKE_INIT1;
 			/* queue work */
 			queue_work(workqueue, &init1_work);
-		} else {
-			pr_info("%s - IPC_AP_WAKE_INIT1" " - wait for falling edge\n",	__func__);
 		}
 	} else if (ipc_ap_wake_state == IPC_AP_WAKE_INIT1) {
 		if (!value) {
@@ -217,54 +167,24 @@ static irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 				ipc_ap_wake_state = IPC_AP_WAKE_L;
 				return IRQ_HANDLED;
 			}
-			spin_lock(&xmm_lock);
-			wakeup_pending = true;
-			if (system_suspending) {
-				spin_unlock(&xmm_lock);
-				pr_info("Set wakeup_pending = 1 in system_" " suspending!!!\n");
-			} else {
-				if (baseband_xmm_powerstate == BBXMM_PS_L3) {
-					spin_unlock(&xmm_lock);
-					pr_info("PM_ST : CP L3 -> L0\n");
-				} else if (baseband_xmm_powerstate == BBXMM_PS_L2) {
-					CP_initiated_L2toL0 = true;
-					spin_unlock(&xmm_lock);
-					baseband_xmm_set_power_status(BBXMM_PS_L2TOL0);
-				} else {
-					CP_initiated_L2toL0 = true;
-					spin_unlock(&xmm_lock);
-				}
-			}
 			/* save gpio state */
 			ipc_ap_wake_state = IPC_AP_WAKE_L;
 		} else {
 			pr_info("%s - rising\n", __func__);
 			value = gpio_get_value(data->modem.xmm.ipc_hsic_active);
-			//pr_info("GPIO [R]: Host_active = %d \n",value); 
 			if (!value) {
 				pr_info("host active low: ignore request\n");
 				ipc_ap_wake_state = IPC_AP_WAKE_H;
 				return IRQ_HANDLED;
 			}
+
 			value = gpio_get_value(data->modem.xmm.ipc_bb_wake);
-			//pr_info("GPIO [R]: Slave_wakeup = %d \n", value); 
 			if (value) {
 				/* Clear the slave wakeup request */
 				gpio_set_value(data->modem.xmm.ipc_bb_wake, 0);
 				pr_info("GPIO [W]: Slave_wake -> 0 \n"); 
 			}
-			if (reenable_autosuspend && usbdev) {
-			      reenable_autosuspend = false;
-				struct usb_interface *intf;
-				intf = usb_ifnum_to_if(usbdev, 0);
-				if (usb_autopm_get_interface_async(intf) >= 0) {
-					pr_info("get_interface_async succeeded"	" - call put_interface\n");
-					usb_autopm_put_interface_async(intf);
-				} else {
-					pr_info("get_interface_async failed" " - do not call put_interface\n");
-				}			      
-			}
-			modem_sleep_flag = false;
+
 			baseband_xmm_set_power_status(BBXMM_PS_L0);
 
 			/* save gpio state */
@@ -425,17 +345,10 @@ static void baseband_xmm_power_work_func(struct work_struct *work)
 			
 		/* reset / power on sequence */
 		baseband_xmm_power_reset_on();
-		/* set power status as on */
-		power_onoff = 1;
 
 		gpio_set_value(baseband_power_driver_data->
 			modem.xmm.ipc_hsic_active, 0);			
 		pr_info("%s: ver > 1145:" "GPIO [W]: Host_active -> 0 \n",__func__); 
-
-		/* go to next state */
-		bbxmm_work->state = BBXMM_WORK_INIT_FLASH_PM_VER_GE_1130_STEP1;
-		queue_work(workqueue, work);
-		pr_info("Go to next state %d\n", bbxmm_work->state);
 		break;
 	case BBXMM_WORK_INIT_FLASH_PM_VER_GE_1145_RECOVERY:
 		pr_info("BBXMM_WORK_INIT_FLASH_PM_VER_GE_1145_RECOVERY\n");
@@ -539,11 +452,8 @@ static int baseband_xmm_power_driver_probe(struct platform_device *device)
 
 	/* init state variables */
 	register_hsic_device = true;
-	CP_initiated_L2toL0 = false;
 	spin_lock_irqsave(&xmm_lock, flags);
 	baseband_xmm_powerstate = BBXMM_PS_UNINIT;
-	wakeup_pending = false;
-	system_suspending = false;
 	spin_unlock_irqrestore(&xmm_lock, flags);
 
 	enable_irq(gpio_to_irq(data->modem.xmm.ipc_ap_wake));
