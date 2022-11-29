@@ -2820,9 +2820,9 @@ void ifx_cp_reset(void)
     gpio_set_value(MODEM_PWR_ON, 1);
 #else
     // USB-HSIC
-    baseband_xmm_power_switch(0);
+//    baseband_xmm_power_switch(0);
     mdelay(100);
-    baseband_xmm_power_switch(1);
+//    baseband_xmm_power_switch(1);
     mdelay(3000);
 #endif
 //                                                                           
