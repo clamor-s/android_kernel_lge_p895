@@ -31,7 +31,7 @@
 #include <linux/wakelock.h>
 #include <linux/spinlock.h>
 #include <linux/usb.h>
-#include <linux/pm_runtime.h> //20120112 - Nvidia Bug [924425] - L2 Auto Suspend fixed #1
+#include <linux/pm_runtime.h>
 #include <linux/suspend.h>
 #include <linux/notifier.h>
 #include <linux/reboot.h>
@@ -91,15 +91,8 @@ static struct workqueue_struct *workqueue;
 static struct work_struct init1_work;
 static struct baseband_power_platform_data *baseband_power_driver_data;
 static bool register_hsic_device;
-static struct wake_lock wakelock;
-static struct usb_device *usbdev;
-//To_Ril-recovery Nvidia_Patch_20111226 [Start]
 static int enum_repeat = ENUM_REPEAT_TRY_CNT;
-//To_Ril-recovery Nvidia_Patch_20111226 [End]
 
-static spinlock_t xmm_lock;
-
-//Move place To_Ril-recovery Nvidia_Patch_20111226
 static struct baseband_xmm_power_work_t *baseband_xmm_power_work;
 
 void baseband_xmm_set_power_status(unsigned int status)
@@ -196,44 +189,7 @@ static irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 }
 EXPORT_SYMBOL(baseband_xmm_power_ipc_ap_wake_irq);
 
-static void baseband_xmm_power_init1_work(struct work_struct *work)
-{
-	int value;
-
-	pr_info("%s {\n", __func__);
-	
-	if (register_hsic_device && baseband_power_driver_data->hsic_register) {
-		pr_info("%s: register usb host controller\n", __func__);
-		baseband_power_driver_data->modem.xmm.hsic_device = baseband_power_driver_data->hsic_register();
-		register_hsic_device = false;
-
-		baseband_xmm_power_work->state = BBXMM_WORK_INIT_FLASH_PM_VER_GE_1145_RECOVERY;
-		queue_work(workqueue, (struct work_struct *) baseband_xmm_power_work);						
-	} else {
-		pr_err("%s: Error? hsic_register is missing \n", __func__);
-	}
-      
-	pr_info("%s }\n", __func__);
-}
-
-static void baseband_xmm_power_reset_on(void)
-{
-	/* reset / power on sequence */
-	pr_info("!! %s !!\n", __func__);
-
-	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 0);
-	mdelay(50);
-	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_rst, 0);
-	mdelay(200);
-	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_rst, 1);	
-	mdelay(50);
-	
-	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 1);
-	udelay(60);
-	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 0);
-}
-
-static void baseband_xmm_power_flash_pm_ver_ge_1145_recovery(struct work_struct *work)
+static void baseband_xmm_power_flash_pm_ver_ge_1145_recovery(void)
 {
 	int timeout_500ms = MODEM_ENUM_TIMEOUT_500MS;
 	int timeout_200ms = 0;
@@ -311,6 +267,40 @@ static void baseband_xmm_power_flash_pm_ver_ge_1145_recovery(struct work_struct 
 		timeout_200ms*200);
 }
 
+static void baseband_xmm_power_init1_work(struct work_struct *work)
+{
+	int value;
+
+	pr_info("%s {\n", __func__);
+	
+	if (register_hsic_device && baseband_power_driver_data->hsic_register) {
+		pr_info("%s: register usb host controller\n", __func__);
+		baseband_power_driver_data->modem.xmm.hsic_device = baseband_power_driver_data->hsic_register();
+		register_hsic_device = false;
+
+		baseband_xmm_power_flash_pm_ver_ge_1145_recovery();
+	}
+      
+	pr_info("%s }\n", __func__);
+}
+
+static void baseband_xmm_power_reset_on(void)
+{
+	/* reset / power on sequence */
+	pr_info("!! %s !!\n", __func__);
+
+	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 0);
+	mdelay(50);
+	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_rst, 0);
+	mdelay(200);
+	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_rst, 1);	
+	mdelay(50);
+	
+	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 1);
+	udelay(60);
+	gpio_set_value(baseband_power_driver_data->modem.xmm.bb_on, 0);
+}
+
 static void baseband_xmm_power_work_func(struct work_struct *work)
 {
 	struct baseband_xmm_power_work_t *bbxmm_work = (struct baseband_xmm_power_work_t *) work;
@@ -320,23 +310,6 @@ static void baseband_xmm_power_work_func(struct work_struct *work)
 	switch (bbxmm_work->state) {
 	case BBXMM_WORK_INIT:
 		pr_info("BBXMM_WORK_INIT\n");
-		/* go to next state */
-		bbxmm_work->state = BBXMM_WORK_INIT_FLASH_PM_STEP1;
-		pr_info("Go to next state %d\n", bbxmm_work->state);
-		queue_work(workqueue, work);
-		break;
-	case BBXMM_WORK_INIT_FLASH_STEP1:
-		pr_info("BBXMM_WORK_INIT_FLASH_STEP1\n");
-		/* register usb host controller */
-		pr_info("%s: register usb host controller\n", __func__);
-		if (baseband_power_driver_data->hsic_register)
-			baseband_power_driver_data->modem.xmm.hsic_device =
-				baseband_power_driver_data->hsic_register();
-		else
-			pr_err("%s: hsic_register is missing\n", __func__);
-		break;
-	case BBXMM_WORK_INIT_FLASH_PM_STEP1:
-		pr_info("BBXMM_WORK_INIT_FLASH_PM_STEP1\n");
 
 		gpio_set_value(baseband_power_driver_data->
 			modem.xmm.ipc_hsic_active, 1);
@@ -349,10 +322,6 @@ static void baseband_xmm_power_work_func(struct work_struct *work)
 		gpio_set_value(baseband_power_driver_data->
 			modem.xmm.ipc_hsic_active, 0);			
 		pr_info("%s: ver > 1145:" "GPIO [W]: Host_active -> 0 \n",__func__); 
-		break;
-	case BBXMM_WORK_INIT_FLASH_PM_VER_GE_1145_RECOVERY:
-		pr_info("BBXMM_WORK_INIT_FLASH_PM_VER_GE_1145_RECOVERY\n");
-		baseband_xmm_power_flash_pm_ver_ge_1145_recovery(work);
 		break;
 	default:
 		break;
@@ -381,12 +350,6 @@ static int baseband_xmm_power_driver_probe(struct platform_device *device)
 
 	/* save platform data */
 	baseband_power_driver_data = data;
-
-	/* init wake lock */
-	wake_lock_init(&wakelock, WAKE_LOCK_SUSPEND, "baseband_xmm_power");
-
-	/* init spin lock */
-	spin_lock_init(&xmm_lock);
 
 	/* request baseband gpio(s) */
 	tegra_baseband_gpios[0].gpio = baseband_power_driver_data->modem.xmm.bb_rst;
@@ -452,9 +415,7 @@ static int baseband_xmm_power_driver_probe(struct platform_device *device)
 
 	/* init state variables */
 	register_hsic_device = true;
-	spin_lock_irqsave(&xmm_lock, flags);
 	baseband_xmm_powerstate = BBXMM_PS_UNINIT;
-	spin_unlock_irqrestore(&xmm_lock, flags);
 
 	enable_irq(gpio_to_irq(data->modem.xmm.ipc_ap_wake));
 
@@ -486,9 +447,6 @@ static int baseband_xmm_power_driver_remove(struct platform_device *device)
 
 	/* free baseband gpio(s) */
 	gpio_free_array(tegra_baseband_gpios,ARRAY_SIZE(tegra_baseband_gpios));
-
-	/* destroy wake lock */
-	wake_lock_destroy(&wakelock);
 
 	/* destroy wake lock */
 	destroy_workqueue(workqueue);
