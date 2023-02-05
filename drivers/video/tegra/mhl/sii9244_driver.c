@@ -133,11 +133,6 @@ extern void rcp_cbus_uevent(u8);		//Subhransu
 // #define	SIMG_NINT		IRQ_GPIO(5)
 #define	SIMG_NINT			gpio_to_irq(GPIO_MHL_INT)
 
-
-//static void simg_interrupt_cb(void);
-//                                              
-static void simg_interrupt_cb(struct work_struct *simg_work);
-
 #ifndef FEATURE_SiI9244_DEVICE
 #error "~~~~~~~~~~~~~~~~"
 #endif 
@@ -180,7 +175,6 @@ void delete_all_cbus_cmd(void);
 void simg_init_timer(u8 data, unsigned int msecs);
 void simg_timer_handler(unsigned long timer_type);
 void simg_timer_hanler_cb(void* _data);
-static void simg_chip_rst(void);
 void ReadModifyWriteCBUS(u8 Offset, u8 Mask, u8 Value);
 void ReadModifyWritePage0(u8 Offset, u8 Mask, u8 Data);
 void WriteBytePage0 (u8 Offset, u8 Data);
@@ -419,15 +413,6 @@ cbus_cmd_node *cbus_cmd_head = NULL, *cbus_cmd_tail = NULL;
 
 #endif /*FEATURE_SiI9244_DEVICE*/
 
-//              
-#if 0
-static struct work_struct simg_interrupt_work = {
-	simg_interrupt_cb
-};
-#else
-static struct work_struct simg_interrupt_work;
-#endif
-
 struct i2c_client* get_simgI2C_client(u8 device_id)
 {
 
@@ -447,10 +432,6 @@ struct i2c_client* get_simgI2C_client(u8 device_id)
 
 	return client_ptr;
 }
-
-
-
-
 
 /*=============================================================
 
@@ -520,46 +501,17 @@ void simg_init_timer(u8 data, unsigned int msecs)
 }
 EXPORT_SYMBOL(simg_timer);		// kibum.leelge.com
 
-//                                                     
-//                                                  
-static irqreturn_t simg_int_irq_handler(int irq, void *devid)
-{
-    SII_LOG_FUNCTION_NAME_ENTRY;
- 	schedule_work(&simg_interrupt_work);
-    SII_LOG_FUNCTION_NAME_EXIT;
-	return IRQ_HANDLED;		//                  
-}
-
 void simg_interrupt_enable(bool flag)
 {
-//    int ret=0;
-//    struct simg_state *state = NULL;
-    SII_LOG_FUNCTION_NAME_ENTRY;
+	SII_LOG_FUNCTION_NAME_ENTRY;
 
-	if(flag == TRUE)
-	{
-		//printk(KERN_INFO "simg_interrupt enable \n");  
-		//    set_GPIO_IRQ_edge( GPIO_5, GPIO_FALLING_EDGE   ); 
-		//    ret = request_irq(SIMG_NINT, simg_int_irq_handler, SA_INTERRUPT  /* 0*/, "SIMG Interrupt"  , (void*)state);	
-		//ret = request_threaded_irq(gpio_to_irq(GPIO_MHL_INT), NULL, simg_int_irq_handler,
-		//		IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "SIMG Interrupt", (void *) state); 
-		//
-		//if(ret != 0)
-		//{
-		 //   free_irq(SIMG_NINT, NULL);
-		//}
-
-		enable_irq(gpio_to_irq(GPIO_MHL_INT));		//                  
+	if(flag == TRUE) {
+		enable_irq(gpio_to_irq(GPIO_MHL_INT));
+	} else {
+		disable_irq(gpio_to_irq(GPIO_MHL_INT));
 	}
-	else
-	{
-		//SII_DEV_DBG("free irq 321 but now not free.\n");
-		//free_irq(SIMG_NINT, NULL);
-		disable_irq(gpio_to_irq(GPIO_MHL_INT));		//                  
-	}
-    SII_LOG_FUNCTION_NAME_EXIT;
+	SII_LOG_FUNCTION_NAME_EXIT;
 }
-
 
 #ifndef FEATURE_SiI9244_DEVICE
 #error "~~~~~~~~~~~~~~~~"
@@ -701,86 +653,9 @@ void ReadModifyWriteCBUS(u8 Offset, u8 Mask, u8 Value)
   WriteByteCBUS(Offset, Temp);
 }
 
-
-static void simg_chip_rst(void)
-{
-  //skip power on in this test code
-  SII_DEV_DBG("simg_power RST ####\n");
-
-#ifdef UNKNOWN_ARCH
-/*
-  gpio_outb(FALSE,MASK_GPIO_3); 
-  simg_msleep(10);
-  gpio_outb(TRUE,MASK_GPIO_3); 
- */
-#else
-//	sii9244_cfg_power(1);
-	gpio_direction_output(GPIO_MHL_RST, GPIO_LEVEL_LOW);
-	gpio_set_value(GPIO_MHL_RST, GPIO_LEVEL_HIGH);
-	mdelay(2);
-	gpio_set_value(GPIO_MHL_RST, GPIO_LEVEL_LOW);
-	mdelay(2);
-	gpio_set_value(GPIO_MHL_RST, GPIO_LEVEL_HIGH);
-#endif
-  
-}
-
-//static void simg_interrupt_cb(void)
-//                                               
-static void simg_interrupt_cb(struct work_struct *simg_work)
-{
-    static int function_start = 1;   //for test....		// for MHL CTS
-    SII_LOG_FUNCTION_NAME_ENTRY;
-    if(function_start == 0)
-    {
-        function_start = 1;
-        // test code start....
-        simg_interrupt_enable(FALSE);
-        simg_msleep(1000);
-        SII_DEV_DBG("SiI9244 function start ## **\n");
-        //mdelay(1000);
-        simg_msleep(1000);      
-        simg_chip_rst();
-        //simg_interrupt_enable(TRUE);
-        sii9244_mhl_tx_int();    
-        simg_interrupt_enable(TRUE);
-    }
-    else
-    {
-        SII_DEV_DBG(" ##### (Line:%d) simg_mhl_tx_handler START #####\n", (int)__LINE__ );
-
-#if 1
-        simg_mhl_tx_handler();
-#else
-
-        if(simg_mhl_tx_handler())
-        {      
-            printk(KERN_INFO " ##### (Line:%d) simg_mhl_tx_handler error #####\n", (int)__LINE__ );
-            simg_interrupt_enable(FALSE);
-            gpio_interrupt_pin_input_mode();
-
-            while(read_interrupt_pin_level() == 0x00)
-            {
-                simg_mhl_tx_handler();
-            }
-
-            //printk(KERN_INFO " ##### (Line:%d) simg_mhl_tx_handler END ##### \n", (int)__LINE__ );
-            simg_interrupt_enable(TRUE);
-
-        }
-#endif
-     SII_DEV_DBG(  " ##### (Line:%d) simg_mhl_tx_handler Final END ##### \n", (int)__LINE__ );
-  
-    }
-    SII_LOG_FUNCTION_NAME_EXIT;
-}
-
 static void mhl_tx_init(void)
 {
-    //                                                   
-    //                                        
-    sii9244_mhl_tx_int(); 
-    //                                                 
+	sii9244_mhl_tx_int(); 
 }
 
 
@@ -2815,32 +2690,13 @@ u8 TX_RGND_check (void)
   
 }
 
-
-void CbusReset (void)
-{
-	u8		idx;
-
+void CbusReset(void) {
 	SET_BIT(PAGE_0_0X72, 0x05, 3);
 
-    simg_msleep(2);
+	simg_msleep(2);
 
-    CLR_BIT(PAGE_0_0X72, 0x05, 3);
-
-//                                                
-/*  
-	for(idx=0; idx < 4; idx++)
-	{
-		// Enable WRITE_STAT interrupt for writes to all 4 MSC Status registers.
-		I2C_WriteByte(PAGE_CBUS_0XC8, 0xE0 + idx, 0xFF);
-
-		// Enable SET_INT interrupt for writes to all 4 MSC Interrupt registers.
-		I2C_WriteByte(PAGE_CBUS_0XC8, 0xF0 + idx, 0xFF);
-	}
-*/
-//                                                
-
+	CLR_BIT(PAGE_0_0X72, 0x05, 3);
 }
-
 
 static void InitCBusRegs (void)
 {

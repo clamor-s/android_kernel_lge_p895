@@ -204,9 +204,9 @@ static ssize_t change_switch_store(struct device *dev, struct device_attribute *
 #ifdef MHL_HW_DEBUG
 static ssize_t change_mhl_ctrl4(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
+	long value = simple_strtoul(buf, NULL, 16);
 	SII_LOG_FUNCTION_NAME_ENTRY;
-	long value = simple_strtoul(buf,NULL,16);
-     
+
 	SII_DEV_DBG("the mhl_ctrl4: 0x%x\n", value);
 
 	set_mhl_ctrl4((int)value);
@@ -440,11 +440,10 @@ EXPORT_SYMBOL(sii9244_i2c_write);
 
 void sii9244_interrupt_event_work(struct work_struct *p)
 {
-    SII_LOG_FUNCTION_NAME_ENTRY;
-
-	//                  
 	struct mhl_work_struct *mhl_work =
 		container_of(p, struct mhl_work_struct, work);
+
+	SII_LOG_FUNCTION_NAME_ENTRY;
 
 	SII_DEV_DBG("[MHL] sii9244_interrupt_event_work() is called\n");
 //	sii9244_interrupt_event();
@@ -1307,57 +1306,6 @@ static void sii9244_cfg_gpio()
     SII_LOG_FUNCTION_NAME_EXIT;
 }
 
-static int mhl_open(struct inode *ip, struct file *fp)
-{
-	SII_DEV_DBG("\n");
-	return 0;
-
-}
-
-static int mhl_release(struct inode *ip, struct file *fp)
-{
-	
-	SII_DEV_DBG("\n");
-	return 0;
-}
-
-
-static int mhl_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
-{
-	SII_DEV_DBG("\n");
-
-#if 0
-	byte data;
-
-	switch(cmd)
-	{
-		case MHL_READ_RCP_DATA:
-			data = GetCbusRcpData();
-			ResetCbusRcpData();
-			put_user(data,(byte *)arg);
-			printk(KERN_ERR "MHL_READ_RCP_DATA read");
-			break;
-		
-		default:
-		break;
-	}
-#endif		
-	return 0;
-}
-
-static struct file_operations mhl_fops = {
-	.owner  = THIS_MODULE,
-	.open   = mhl_open,
-    	.release = mhl_release,
-    	//.ioctl = mhl_ioctl,
-};
-                 
-static struct miscdevice mhl_device = {
-    .minor  = MISC_DYNAMIC_MINOR,
-    .name   = "mhl",
-    .fops   = &mhl_fops,
-};
-
 static int __init sii9244_module_init(void)
 {
 	int ret;
@@ -1378,11 +1326,6 @@ static int __init sii9244_module_init(void)
 	if (device_create_file(mhl_switch, &dev_attr_mhl_sel) < 0)
 		SII_DEV_DBG_ERROR("[MHL] Failed to create file (mhl_sel)\n");
 #endif
-
-	ret = misc_register(&mhl_device);
-	if(ret) {
-		SII_DEV_DBG_ERROR("misc_register failed - mhl \n");
-	}
 
 	ret = i2c_add_driver(&sii9244_i2c_driver);
 	if (ret != 0)
