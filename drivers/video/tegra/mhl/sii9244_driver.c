@@ -65,21 +65,8 @@
 // #include <asm/uaccess.h>
 
 #include <mach/gpio.h>
-
-//                  
 #include <linux/time.h>
 #include <linux/poll.h>
-
-/*
-#include "SiI9244_Reg.h"
-//#include "Common_Def.h"
-#include "SiI9244_I2C_master.h"
-#include "SiI9244_I2C_slave_add.h"
-#include "si_cbusDefs.h"
-#include "si_cbus_regs.h"
-#include "si_cbus.h"
-#include "si_apiCbus.h"
-*/
 
 #include "sii9244_driver.h"
 
@@ -176,7 +163,7 @@ void simg_init_timer(u8 data, unsigned int msecs);
 void simg_timer_handler(unsigned long timer_type);
 void simg_timer_hanler_cb(void* _data);
 void ReadModifyWriteCBUS(u8 Offset, u8 Mask, u8 Value);
-void ReadModifyWritePage0(u8 Offset, u8 Mask, u8 Data);
+void ReadModifyWrite_I2C_MHL(u8 Offset, u8 Mask, u8 Data);
 void WriteBytePage0 (u8 Offset, u8 Data);
 void sii9244_mhl_tx_int(void);
 void WriteBytePage0 (u8 Offset, u8 Data);
@@ -628,11 +615,11 @@ u8 ReadBytePage0 (u8 Offset)
 
 void WriteBytePage0 (u8 Offset, u8 Data)
 {
-	I2C_WriteByte(PAGE_0_0X72, Offset, Data);
+	I2C_WriteByte(PAGE_0_0X72, Offset, Data); // I2C_MHL
 }
 
 
-void ReadModifyWritePage0(u8 Offset, u8 Mask, u8 Data)
+void ReadModifyWrite_I2C_MHL(u8 Offset, u8 Mask, u8 Data)
 {
 
 	u8 Temp;
@@ -779,10 +766,10 @@ static void ForceUsbIdSwitchOpen ( void )
 {
   DISABLE_DISCOVERY; 		// Disable CBUS discovery
 
-  ReadModifyWritePage0(0x95, BIT6, BIT6);	// Force USB ID switch to open
+  ReadModifyWrite_I2C_MHL(0x95, BIT6, BIT6);	// Force USB ID switch to open
   //WriteBytePage0(0x92, 0x86);
   WriteBytePage0(0x92, 0xa6);		// for CTS 20111118
-  ReadModifyWritePage0(0x79, BIT5 | BIT4, BIT4);	// Force upstream HPD to 0 when not in MHL mode.
+  ReadModifyWrite_I2C_MHL(0x79, BIT5 | BIT4, BIT4);	// Force upstream HPD to 0 when not in MHL mode.
 }
 
 
@@ -791,7 +778,7 @@ static void ReleaseUsbIdSwitchOpen ( void )
     SII_LOG_FUNCTION_NAME_ENTRY;
 	simg_msleep(50); // per spec
 	// Release USB ID switch
-	ReadModifyWritePage0(0x95, BIT6, 0x00);
+	ReadModifyWrite_I2C_MHL(0x95, BIT6, 0x00);
 	ENABLE_DISCOVERY;
     SII_LOG_FUNCTION_NAME_EXIT;
 }
@@ -1181,7 +1168,7 @@ void mhltx_got_mhlintr(u8 data0, u8 data1)
 		
 		//hdmi_restart();
 
-        ReadModifyWritePage0(0x79, BIT5 | BIT4, BIT4);	// Force upstream HPD to 0 when not in MHL mode.
+        ReadModifyWrite_I2C_MHL(0x79, BIT5 | BIT4, BIT4);	// Force upstream HPD to 0 when not in MHL mode.
         simg_msleep(110);
         SET_BIT(PAGE_0_0X72, 0x79,  5);
         CLR_BIT(PAGE_0_0X72, 0x79, 4);
@@ -2330,8 +2317,6 @@ int process_mhl_discovery_start(void)
     
     }
 
-#if 1
-
     mhl_status_value.cbus_connected = ReadByteCBUS(0x0a);	// added
 
     int4Status = I2C_ReadByte(PAGE_0_0X72, (0x74));	// read status
@@ -2344,27 +2329,6 @@ int process_mhl_discovery_start(void)
         SII_DEV_DBG("int4Status = %02X \n ", (int)int4Status);	
     }
     I2C_WriteByte(PAGE_0_0X72, (0x74), int4Status);	// clear all interrupts
-#else
-
-	//                  
-	{
-		int retry_count = 2;
-		int i = 0;
-		for(i=0;i<retry_count;i++)
-		{
-			int4Status = I2C_ReadByte(PAGE_0_0X72, (0x74));	// read status
-			SII_DEV_DBG("int4Status = %02X , retry_count=%d\n ", (int)int4Status, i);
-			if(int4Status != 0x00)
-				break;
-			msleep(10);
-		}
-		I2C_WriteByte(PAGE_0_0X72, (0x74), int4Status);	// clear all interrupts
-	}
-	SII_DEV_DBG("int4Status = %02X\n ", (int)int4Status);
-#endif
-    //SII_DEV_DBG("INT PAGE_0_0X72:0x71 :%x \n" ,I2C_ReadByte(PAGE_0_0X72, 0x71));
-    //SII_DEV_DBG("INT ReadByteCBUS:0x08 :%x \n" ,ReadByteCBUS(0x08));
-    //SII_DEV_DBG("INT ReadByteCBUS:0x1E :%x \n" ,ReadByteCBUS(0x1E));  
 
     mhl_status_value.cbus_connected = ReadByteCBUS(0x0a);
 
@@ -2402,11 +2366,6 @@ int process_mhl_discovery_start(void)
         WRITE_INTR1_VALUE(mhl_status_value.intr1_mask_value);
         WRITE_CBUS1_VALUE(mhl_status_value.intr_cbus1_mask_value);
         WRITE_CBUS2_VALUE(mhl_status_value.intr_cbus2_mask_value); 
-
-        //SII_DEV_DBG("INT PAGE_0_0X72:0x74 :%x \n" ,I2C_ReadByte(PAGE_0_0X72, 0x74));
-        //SII_DEV_DBG("INT PAGE_0_0X72:0x71 :%x \n" ,I2C_ReadByte(PAGE_0_0X72, 0x71));
-        //SII_DEV_DBG("INT ReadByteCBUS:0x08 :%x \n" ,ReadByteCBUS(0x08));
-        //SII_DEV_DBG("INT ReadByteCBUS:0x1E :%x \n" ,ReadByteCBUS(0x1E));  
 
         process_cbus_interrrupt();
     
@@ -2551,7 +2510,6 @@ enum hrtimer_restart hrtimer_wakeup_callback(struct hrtimer *timer)
 {
 	wake_up(&wake_wq);
 	wakeup_time_expired = true;
-//	hrtimer_cancel(&hr_wake_timer);
 	return HRTIMER_NORESTART;
 }
 
@@ -2562,13 +2520,11 @@ void start_hrtimer_ms(unsigned long delay_in_ms)
 	ktime = ktime_set(0, MS_TO_NS(delay_in_ms));
 
 	wakeup_time_expired = false;
-//	hrtimer_init(&hr_wake_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	if (first_timer)
 		first_timer = false;
 	else
 		hrtimer_cancel(&hr_wake_timer);
 
-//	hr_wake_timer.function = &hrtimer_wakeup_callback;
 	hrtimer_start(&hr_wake_timer, ktime, 0x1);
 }
 #endif
@@ -2587,7 +2543,6 @@ static void CbusWakeUpPulseGenerator(void)
 		//
 		// I2C method
 		//
-		//I2C_WriteByte(SA_TX_Page0_Primary, 0x92, (I2C_ReadByte(SA_TX_Page0_Primary, 0x92) | 0x10));
 	
 		// Start the pulse
 		I2C_WriteByte(PAGE_0_0X72, 0x96, (I2C_ReadByte(PAGE_0_0X72, 0x96) | 0xC0));
@@ -2691,216 +2646,77 @@ u8 TX_RGND_check (void)
 }
 
 void CbusReset(void) {
+	// matches mainline
 	SET_BIT(PAGE_0_0X72, 0x05, 3);
-
 	simg_msleep(2);
-
 	CLR_BIT(PAGE_0_0X72, 0x05, 3);
 }
 
 static void InitCBusRegs (void)
 {
-	u8		regval;
+	u8 regval;
 
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x07, 0xF2);          // new default is for MHL mode
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x40, 0x03); 			// CBUS Drive Strength
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x42, 0x06); 			// CBUS DDC interface ignore segment pointer
+	// matches mainline
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x07, 0xF2);	// new default is for MHL mode
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x40, 0x03);	// CBUS Drive Strength
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x42, 0x06);	// CBUS DDC interface ignore segment pointer
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x36, 0x0C);
-
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x3D, 0xFD);
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x1C, 0x01);
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x1D, 0x0F);          // MSC_RETRY_FAIL_LIM
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x1D, 0x0F);	// MSC_RETRY_FAIL_LIM
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x44, 0x02);
 
 	// Setup MHL TX devcap
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x80, 0); 
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x81, MHL_VERSION);
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x82, (MHL_DEV_CAT_SOURCE));
-
-// CTS 6.3.1.1
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x83, (u8)(322 >>   8));	// CDF check
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x84, (u8)(322 & 0xFF));	// CDF check
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x83, 0x0);
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x84, 0x0);
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x83, 0x02); // ADOPTER_ID_H 2
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x84, 0x40); // ADOPTER_ID_L 64
-
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x81, MHL_VERSION); // MAINLINE 0x11
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x82, MHL_DEV_CAT_SOURCE);
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x83, 0x02);	// ADOPTER_ID_H 2 // MAINLINE 0x01
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x84, 0x40);	// ADOPTER_ID_L 64 // MAINLINE 0x41
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x85, MHL_DEV_VID_LINK_SUPPRGB444);
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x86, MHL_DEV_AUD_LINK_2CH);
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x87, 0);										// not for source
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x87, 0);		// not for source
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x88, MHL_LOGICAL_DEVICE_MAP);
-
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x89, 0);	// bandwidth 0 -> 5	// CDF check		// not for source
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x89, 5);										// not for source
-	
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x89, 5);		// not for source
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8A, (MHL_FEATURE_RCP_SUPPORT | MHL_FEATURE_RAP_SUPPORT |MHL_FEATURE_SP_SUPPORT));
-
-// CTS 6.3.1.1
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8B, (u8)(0x9244>>   8));	 // CDF check
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8C, (u8)(0x9244& 0xFF)); // CDF check			// reserved
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8B, 0x0);
-//	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8C, 0x0);
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8B, 0x5C); // DEVICE_ID_H 92
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8C, 0x2C); // DEVICE_ID_H 44
-
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8B, 0x5C);	// DEVICE_ID_H 92
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8C, 0x2C);	// DEVICE_ID_H 44
 
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8D, 16);
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8E, MHL_INT_AND_STATUS_SIZE);	// CDF check
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8F, 0);										//reserved
+	I2C_WriteByte(PAGE_CBUS_0XC8, 0x8F, 0);		//reserved
 
-    // Make bits 2,3 (initiator timeout) to 1,1 for register CBUS_LINK_CONTROL_2
-    regval = I2C_ReadByte(PAGE_CBUS_0XC8, REG_CBUS_LINK_CONTROL_2 );
-    regval = (regval | 0x0C);
-    I2C_WriteByte(PAGE_CBUS_0XC8,REG_CBUS_LINK_CONTROL_2, regval);
+	// Make bits 2,3 (initiator timeout) to 1,1 for register CBUS_LINK_CONTROL_2
+	regval = I2C_ReadByte(PAGE_CBUS_0XC8, REG_CBUS_LINK_CONTROL_2 );
+	regval = (regval | 0x0C);
+	I2C_WriteByte(PAGE_CBUS_0XC8,REG_CBUS_LINK_CONTROL_2, regval);
 
-//                           
-///    // Clear legacy bit on Wolverine TX.
-///    regval = I2C_ReadByte(PAGE_CBUS_0XC8, REG_MSC_TIMEOUT_LIMIT);
-///    regval &= ~MSC_TIMEOUT_LIMIT_MSB_MASK;
-///    regval |= 0x0F;
-///    I2C_WriteByte(PAGE_CBUS_0XC8, REG_MSC_TIMEOUT_LIMIT, (regval & MSC_TIMEOUT_LIMIT_MSB_MASK));
-
-    // Set NMax to 1
-    I2C_WriteByte(PAGE_CBUS_0XC8, REG_CBUS_LINK_CONTROL_1, 0x01);
-    ReadModifyWriteCBUS( REG_CBUS_LINK_CONTROL_11, BIT5 | BIT4 | BIT3, BIT5 | BIT4);
-
-    ReadModifyWriteCBUS( REG_MSC_TIMEOUT_LIMIT, 0x0F, 0x0D);
-
-    ReadModifyWriteCBUS(0x2E, BIT4 | BIT2 | BIT0, BIT4 | BIT2 | BIT0);
-
+	// Set NMax to 1
+	I2C_WriteByte(PAGE_CBUS_0XC8, REG_CBUS_LINK_CONTROL_1, 0x01);
+	ReadModifyWriteCBUS(REG_CBUS_LINK_CONTROL_11, BIT5 | BIT4 | BIT3, BIT5 | BIT4);
+	ReadModifyWriteCBUS(REG_MSC_TIMEOUT_LIMIT, 0x0F, 0x0D);
+	ReadModifyWriteCBUS(0x2E, BIT4 | BIT2 | BIT0, BIT4 | BIT2 | BIT0);
 }
 
-
-///////////////////////////////////////////////////////////////////////////
-// WriteInitialRegisterValues
-//
-//
-///////////////////////////////////////////////////////////////////////////
-//                             
-//SA_TX_Page1_Primary -> PAGE_1_0x7A
-//SA_TX_HDMI_RX_Primary -> PAGE_2_0x92
-//SA_TX_Page0_Primary -> PAGE_0_0X72
-//SA_TX_CBUS_Primary -> PAGE_CBUS_0XC8
-#if 0
-void WriteInitialRegisterValues ( void )
+static void WriteInitialRegisterValues(void)
 {
 	SII_DEV_DBG("Drv: WriteInitialRegisterValues\n");
-	// Power Up
-	I2C_WriteByte(PAGE_1_0x7A, 0x3D, 0x3F);	// Power up CVCC 1.2V core
-	I2C_WriteByte(PAGE_2_0x92, 0x11, 0x01);	// Enable TxPLL Clock
-	I2C_WriteByte(PAGE_2_0x92, 0x12, 0x15);	// Enable Tx Clock Path & Equalizer
-	I2C_WriteByte(PAGE_0_0X72, 0x08, 0x35);	// Power Up TMDS Tx Core
 
-	// Analog PLL Control
-	I2C_WriteByte(PAGE_2_0x92, 0x10, 0xC1);	// bits 5:4 = 2b00 as per characterization team.
-	I2C_WriteByte(PAGE_2_0x92, 0x17, 0x03);	// PLL Calrefsel
-	I2C_WriteByte(PAGE_2_0x92, 0x1A, 0x20);	// VCO Cal
-	I2C_WriteByte(PAGE_2_0x92, 0x22, 0x8A);	// Auto EQ
-	I2C_WriteByte(PAGE_2_0x92, 0x23, 0x6A);	// Auto EQ
-	I2C_WriteByte(PAGE_2_0x92, 0x24, 0xAA);	// Auto EQ
-	I2C_WriteByte(PAGE_2_0x92, 0x25, 0xCA);	// Auto EQ
-	I2C_WriteByte(PAGE_2_0x92, 0x26, 0xEA);	// Auto EQ
-	I2C_WriteByte(PAGE_2_0x92, 0x4C, 0xA0);	// Manual zone control
-	I2C_WriteByte(PAGE_2_0x92, 0x4D, 0x00);	// PLL Mode Value
+	// compound sii9234_reset
 
-	I2C_WriteByte(PAGE_0_0X72, 0x80, 0x34);	// Enable Rx PLL Clock Value
-	I2C_WriteByte(PAGE_2_0x92, 0x45, 0x44);	// Rx PLL BW value from I2C
-	I2C_WriteByte(PAGE_2_0x92, 0x31, 0x0A);	// Rx PLL BW ~ 4MHz
-	I2C_WriteByte(PAGE_0_0X72, 0xA0, 0xD0);
-	I2C_WriteByte(PAGE_0_0X72, 0xA1, 0xFC);	// Disable internal MHL driver
-#ifdef CONFIG_TARGET_LOCALE_KOR
-	I2C_WriteByte(PAGE_0_0X72, 0xA3, 0xED);
-#else
-	I2C_WriteByte(PAGE_0_0X72, 0xA3, 0xFB);
-#endif
-	I2C_WriteByte(PAGE_0_0X72, 0xA6, 0x0C);
+	// sii9234_power_init
 
-
-	I2C_WriteByte(PAGE_0_0X72, 0x2B, 0x01);	// Enable HDCP Compliance safety
-
-	//
-	// CBUS & Discovery
-	// CBUS discovery cycle time for each drive and float = 150us
-	//
-	//ReadModifyWriteTPI(0x90, BIT_3 | BIT_2, BIT_3);
-	ReadModifyWritePage0(0x90, BIT3 | BIT2, BIT3);
-
-	I2C_WriteByte(PAGE_0_0X72, 0x91, 0xA5);		// Clear bit 6 (reg_skip_rgnd)
-
-
-	// Changed from 66 to 65 for 94[1:0] = 01 = 5k reg_cbusmhl_pup_sel
-	//I2C_WriteByte(PAGE_0_0X72, 0x94, 0x65);			// 1.8V CBUS VTH & GND threshold
-    I2C_WriteByte(PAGE_0_0X72, 0x94, 0x75);			// 1.8V CBUS VTH & GND threshold
-
-	//set bit 2 and 3, which is Initiator Timeout
-	I2C_WriteByte(PAGE_CBUS_0XC8, 0x31, I2C_ReadByte(PAGE_CBUS_0XC8, 0x31) | 0x0c);
-
-	//I2C_WriteByte(PAGE_0_0X72, 0xA5, 0xAC);			// RGND Hysterisis.
-    I2C_WriteByte(PAGE_0_0X72, 0xA5, 0xA0);			
-	SII_DEV_DBG("Drv: MHL 1.0 Compliant Clock\n");
-
-	// RGND & single discovery attempt (RGND blocking)
-	I2C_WriteByte(PAGE_0_0X72, 0x95, 0x31);
-
-	// use 1K and 2K setting
-	//I2C_WriteByte(PAGE_0_0X72, 0x96, 0x22);
-	// Use VBUS path of discovery state machine
-	I2C_WriteByte(PAGE_0_0X72, 0x97, 0x00);
-
-	//ReadModifyWriteTPI(0x95, BIT6, BIT6);		// Force USB ID switch to open
-	ReadModifyWritePage0(0x95, BIT6, BIT6);		// Force USB ID switch to open
-
-	//
-	// For MHL compliance we need the following settings for register 93 and 94
-	// Bug 20686
-	//
-	// To allow RGND engine to operate correctly.
-	//
-	// When moving the chip from D2 to D0 (power up, init regs) the values should be
-	// 94[1:0] = 01  reg_cbusmhl_pup_sel[1:0] should be set for 5k
-	// 93[7:6] = 10  reg_cbusdisc_pup_sel[1:0] should be set for 10k (default)
-	// 93[5:4] = 00  reg_cbusidle_pup_sel[1:0] = open (default)
-	//
-
-	//WriteByteTPI(0x92, 0x86);				//
-	WriteBytePage0(0x92, 0x86);				//
-	// change from CC to 8C to match 5K
-	//WriteByteTPI(0x93, 0x8C);				// Disable CBUS pull-up during RGND measurement
-	WriteBytePage0(0x93, 0x8C);				// Disable CBUS pull-up during RGND measurement
-	//NAGSM_Android_SEL_Kernel_Aakash_20101214
- 	//ReadModifyWriteTPI(0x79, BIT_5 | BIT_4, BIT_4);	// Force upstream HPD to 0 when not in MHL mode.
-	//ReadModifyWriteTPI(0x79, BIT_1 | BIT_2, 0); //Set interrupt active high
-
-	msleep(25);
-	//ReadModifyWriteTPI(0x95, BIT_6, 0x00);		// Release USB ID switch
-	ReadModifyWritePage0(0x95, BIT6, 0x00);		// Release USB ID switch
-
-	I2C_WriteByte(PAGE_0_0X72, 0x90, 0x27);			// Enable CBUS discovery
-
-	//if (settingMode9290 != pin9290_938x) {
-	// Reset CBus to clear state
-	CbusReset();
-	//}
-
-	InitCBusRegs();
-
-	// Enable Auto soft reset on SCDT = 0
-	I2C_WriteByte(PAGE_0_0X72, 0x05, 0x04);
-
-	// HDMI Transcode mode enable
-	I2C_WriteByte(PAGE_0_0X72, 0x0D, 0x1C);
-
- 	//I2C_WriteByte(PAGE_0_0X72, 0x78, RGND_RDY_EN);
-}
-#else
-static void WriteInitialRegisterValues (void)
-{
-	SII_DEV_DBG("Drv: WriteInitialRegisterValues\n");
-	// Power Up
+	/* Force the SiI9234 into the D0 state. */
 	I2C_WriteByte(PAGE_1_0x7A, 0x3D, 0x3F);	
+	/* Enable TxPLL Clock */
 	I2C_WriteByte(PAGE_2_0x92, 0x11, 0x01);	
+	/* Enable Tx Clock Path & Equalizer */
 	I2C_WriteByte(PAGE_2_0x92, 0x12, 0x15);	
+	/* Power Up TMDS */
 	I2C_WriteByte(PAGE_0_0X72, 0x08, 0x35);	
+
+	// sii9234_cbus_reset has to be here?
+
+	// sii9234_hdmi_init
 
 	// Analog PLL Control
 	I2C_WriteByte(PAGE_2_0x92, 0x10, 0xC1);	
@@ -2914,55 +2730,77 @@ static void WriteInitialRegisterValues (void)
 	I2C_WriteByte(PAGE_2_0x92, 0x4C, 0xA0);	
 	I2C_WriteByte(PAGE_2_0x92, 0x4D, 0x00);	
 
-	I2C_WriteByte(PAGE_0_0X72, 0x80, 0x24);	
+	I2C_WriteByte(PAGE_0_0X72, 0x80, 0x24);	// here mainline sets 0x34
 	I2C_WriteByte(PAGE_2_0x92, 0x45, 0x44);	
 	I2C_WriteByte(PAGE_2_0x92, 0x31, 0x0A);	
+	// hdmi_writeb(ctx, HDMI_RX_TMDS0_CCTRL1_REG, 0xC1);
+
+	// sii9234_mhl_tx_ctl_int
+
 	I2C_WriteByte(PAGE_0_0X72, 0xA0, 0xD0);
 	I2C_WriteByte(PAGE_0_0X72, 0xA1, 0xFC);	
-
-//                                                                                      
-#ifdef MHL_HW_DEBUG
-	I2C_WriteByte(PAGE_0_0X72, 0xA3, mhl_ctrl4);
-	printk(KERN_ERR "[HDMI]MHL CTRL4 is 0x%x !!!!!!!!!!!!!!!!!!!!!!!!\n",mhl_ctrl4);
-#else
 	I2C_WriteByte(PAGE_0_0X72, 0xA3, 0xEB);
-#endif
-//                                                                                      
 	I2C_WriteByte(PAGE_0_0X72, 0xA6, 0x0C);
 
+	// sii9234_reset continues
+
+	/* Enable HDCP Compliance safety */
 	I2C_WriteByte(PAGE_0_0X72, 0x2B, 0x01);	
 
-	ReadModifyWritePage0(0x90, BIT3 | BIT2, BIT2);
+	/* CBUS discovery cycle time for each drive and float = 150us */
+	ReadModifyWrite_I2C_MHL(0x90, BIT3 | BIT2, BIT2);
 
+	/* Clear bit 6 (reg_skip_rgnd) */
+	I2C_WriteByte(PAGE_0_0X72, 0x91, 0xA5);	
 
-	I2C_WriteByte(PAGE_0_0X72, 0x91, 0xA5);		
+	/*
+	 * Changed from 66 to 65 for 94[1:0] = 01 = 5k reg_cbusmhl_pup_sel
+	 * 1.8V CBUS VTH & GND threshold
+	 * to meet CTS 3.3.7.2 spec
+	 */
 	I2C_WriteByte(PAGE_0_0X72, 0x94, 0x77);			
-	//                                                                                                     
-
 	I2C_WriteByte(PAGE_CBUS_0XC8, 0x31, I2C_ReadByte(PAGE_CBUS_0XC8, 0x31) | 0x0c);
 	I2C_WriteByte(PAGE_0_0X72, 0xA5, 0xA0); 
 
-	SII_DEV_DBG("Drv: MHL 1.0 Compliant Clock\n");
-
+	/* RGND & single discovery attempt (RGND blocking) */
 	I2C_WriteByte(PAGE_0_0X72, 0x95, 0x71);
+	/* Use VBUS path of discovery state machine */
 	I2C_WriteByte(PAGE_0_0X72, 0x97, 0x00);
 
+	/* RGND & single discovery attempt (RGND blocking) */
+//	mhl_tx_writeb(ctx, MHL_TX_DISC_CTRL6_REG, BLOCK_RGND_INT |
+//		      DVRFLT_SEL | SINGLE_ATT);
 
-	//WriteBytePage0(0x92, 0x86);				
-	WriteBytePage0(0x92, 0x86);							// for CTS 20111118
-	WriteBytePage0(0x93, 0x8C);				
+	/*
+	 * To allow RGND engine to operate correctly.
+	 * When moving the chip from D2 to D0 (power up, init regs)
+	 * the values should be
+	 * 94[1:0] = 01  reg_cbusmhl_pup_sel[1:0] should be set for 5k
+	 * 93[7:6] = 10  reg_cbusdisc_pup_sel[1:0] should be
+	 * set for 10k (default)
+	 * 93[5:4] = 00  reg_cbusidle_pup_sel[1:0] = open (default)
+	 */	
+	WriteBytePage0(0x92, 0x86); // MHL
 
-    ReadModifyWritePage0(0x79, BIT5 | BIT4, BIT4);	// Force upstream HPD to 0 when not in MHL mode.
-    SII_DEV_DBG("Drv: Upstream HPD Acquired - driven low.\n");
+	/*
+	 * Change from CC to 8C to match 5K
+	 * to meet CTS 3.3.72 spec
+	 */
+	WriteBytePage0(0x93, 0x8C); // MHL			
+
+	// mainline does different
+	ReadModifyWrite_I2C_MHL(0x79, BIT5 | BIT4, BIT4); // Force upstream HPD to 0 when not in MHL mode.
 
 #ifdef ACTIV_HIGH_INT
-	ReadModifyWritePage0(0x79, BIT_1 | BIT_2, 0); //Set interrupt active high
-#endif/*ACTIV_HIGH_INT*/
+	ReadModifyWrite_I2C_MHL(0x79, BIT_1 | BIT_2, 0); //Set interrupt active high <- mainline does this
+#endif /*ACTIV_HIGH_INT*/
 
-    simg_msleep(25);
-    ReadModifyWritePage0(0x95, BIT6, 0x00);		// Release USB ID switch
+	simg_msleep(25);
 
-    I2C_WriteByte(PAGE_0_0X72, 0x90, 0x27);			// Enable CBUS discovery
+	/* Release usb_id switch */
+	ReadModifyWrite_I2C_MHL(0x95, BIT6, 0x00);		// Release USB ID switch
+	I2C_WriteByte(PAGE_0_0X72, 0x90, 0x27);			// Enable CBUS discovery
+
 	CbusReset();
 	InitCBusRegs();
 
@@ -2971,7 +2809,6 @@ static void WriteInitialRegisterValues (void)
 	I2C_WriteByte(PAGE_0_0X72, 0x0D, 0x1C);
 
 }
-#endif
 
 void TX_GO2D3 (void)
 {
@@ -2979,14 +2816,14 @@ void TX_GO2D3 (void)
 
   ForceUsbIdSwitchOpen();
 
-  ReadModifyWritePage0(0x93, BIT7 | BIT6 | BIT5 | BIT4, 0);
-  ReadModifyWritePage0(0x94, BIT1 | BIT0, 0);
+  ReadModifyWrite_I2C_MHL(0x93, BIT7 | BIT6 | BIT5 | BIT4, 0); // MHL - 39
+  ReadModifyWrite_I2C_MHL(0x94, BIT1 | BIT0, 0); // MHL - 39
   ReleaseUsbIdSwitchOpen();
   
-  ReadModifyWritePage0(0x79, BIT5 | BIT4, BIT4);	//Force HPD to LOW
+  ReadModifyWrite_I2C_MHL(0x79, BIT5 | BIT4, BIT4); // MHL - 39	//Force HPD to LOW
 
-  I2C_WriteByte(PAGE_2_0x92, 0x01, 0x03);
-  CLR_BIT(PAGE_1_0x7A, 0x3D, 0);  
+  I2C_WriteByte(PAGE_2_0x92, 0x01, 0x03); // HDMI - 49
+  CLR_BIT(PAGE_1_0x7A, 0x3D, 0);  // TRI - 3D
 }
 
 //                                                                                      
@@ -3060,14 +2897,10 @@ void sii9244_mhl_tx_int(void)
 }
 EXPORT_SYMBOL(sii9244_mhl_tx_int);
 
-
-//                  
 void sii9244_driver_init(void)
 {
 	SII_DEV_DBG(" sii9244_driver_init\n" );
-	//                                                                          
 
-	//                                      
   	init_timer(&simg_timer);
   	simg_timer.function = simg_timer_handler;
 	
